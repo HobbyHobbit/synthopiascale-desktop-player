@@ -10,10 +10,10 @@ interface GlassCardProps {
 export function GlassCard({ children, visible, className = '', intensity = 0 }: GlassCardProps) {
   if (!visible) return null;
 
-  // Dynamic opacity based on audio intensity (like read-only source)
-  const bgOpacity = 0.15 + intensity * 0.1;
-  const borderOpacity = 0.2 + intensity * 0.3;
-  const glowIntensity = 0.1 + intensity * 0.2;
+  // Crystal-clear effect: ~90% transparent base, subtle audio reactivity
+  const bgOpacity = 0.05 + intensity * 0.08; // 5% base, up to 13% with audio
+  const borderOpacity = 0.15 + intensity * 0.25;
+  const glowIntensity = 0.05 + intensity * 0.15;
 
   return (
     <div
@@ -25,72 +25,66 @@ export function GlassCard({ children, visible, className = '', intensity = 0 }: 
       `}
       style={{
         background: `rgba(0, 0, 0, ${bgOpacity})`,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        backdropFilter: 'blur(4px)', // Reduced blur for clearer view
+        WebkitBackdropFilter: 'blur(4px)',
         border: `1px solid rgba(212, 175, 55, ${borderOpacity})`,
         boxShadow: `
-          0 8px 32px 0 rgba(0, 0, 0, 0.25),
-          0 0 ${40 + intensity * 60}px rgba(212, 175, 55, ${glowIntensity}),
-          inset 0 1px 0 0 rgba(255, 255, 255, 0.2)
+          0 4px 16px 0 rgba(0, 0, 0, 0.1),
+          0 0 ${20 + intensity * 40}px rgba(212, 175, 55, ${glowIntensity}),
+          inset 0 1px 0 0 rgba(255, 255, 255, 0.1)
         `,
       }}
     >
-      {/* Crystal edge highlights */}
+      {/* Subtle crystal edge highlights */}
       <div className="absolute inset-0 rounded-3xl pointer-events-none">
         {/* Top edge */}
         <div 
           className="absolute top-0 left-0 right-0 h-px"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent)',
-            boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)',
+            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
           }}
         />
         {/* Bottom edge */}
         <div 
           className="absolute bottom-0 left-0 right-0 h-px"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
-            boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)',
+            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
           }}
         />
         {/* Left edge */}
         <div 
           className="absolute top-0 bottom-0 left-0 w-px"
           style={{
-            background: 'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.5), transparent)',
-            boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)',
+            background: 'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.25), transparent)',
           }}
         />
         {/* Right edge */}
         <div 
           className="absolute top-0 bottom-0 right-0 w-px"
           style={{
-            background: 'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
-            boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)',
+            background: 'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
           }}
         />
       </div>
 
-      {/* Light reflection overlay */}
+      {/* Very subtle light reflection */}
       <div 
         className="absolute inset-0 rounded-3xl pointer-events-none"
         style={{
           background: `radial-gradient(circle 600px at 30% 30%, 
-            rgba(255, 255, 255, 0.08) 0%, 
-            rgba(255, 255, 255, 0.03) 30%, 
-            transparent 60%)`,
+            rgba(255, 255, 255, 0.03) 0%, 
+            transparent 50%)`,
           mixBlendMode: 'overlay',
         }}
       />
 
-      {/* Gold accent reflection */}
+      {/* Subtle gold accent */}
       <div 
         className="absolute inset-0 rounded-3xl pointer-events-none"
         style={{
           background: `radial-gradient(circle 400px at 70% 70%, 
-            rgba(212, 175, 55, 0.15) 0%, 
-            rgba(212, 175, 55, 0.05) 40%, 
-            transparent 60%)`,
+            rgba(212, 175, 55, 0.05) 0%, 
+            transparent 50%)`,
           mixBlendMode: 'screen',
         }}
       />

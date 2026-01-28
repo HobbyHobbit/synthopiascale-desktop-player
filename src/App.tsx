@@ -6,7 +6,7 @@ import { ParticleBackground } from './components/ParticleBackground';
 import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { useAppStore } from './store/appStore';
-import { useAudioSystem } from './hooks/useAudioSystem';
+import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { defaultTracks } from './data/tracks';
 import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff } from 'lucide-react';
 
@@ -43,21 +43,30 @@ function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
   const { settings, loadSettings, setSettings } = useAppStore();
-  const { analyser, isPlaying, startAudio, stopAudio } = useAudioSystem();
+  const { 
+    isPlaying, 
+    currentTrack, 
+    currentTrackIndex, 
+    currentTime, 
+    duration, 
+    analyser,
+    togglePlay,
+    nextTrack,
+    prevTrack,
+    seek,
+  } = useAudioPlayer();
   
-  // Track index and info from real tracks
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [audioIntensity, setAudioIntensity] = useState(0);
-  const currentTrack = defaultTracks[currentTrackIndex];
-  
-  const [trackInfo, setTrackInfo] = useState<TrackInfo>({
-    title: currentTrack.title,
-    artist: currentTrack.artist,
+
+  // Build trackInfo from audio player state
+  const trackInfo: TrackInfo = {
+    title: currentTrack?.title || 'No Track',
+    artist: currentTrack?.artist || 'Unknown',
     trackNumber: currentTrackIndex + 1,
     totalTracks: defaultTracks.length,
-    duration: currentTrack.duration,
-    currentTime: 0,
-  });
+    duration: duration || currentTrack?.duration || 0,
+    currentTime: currentTime,
+  };
 
   // Audio intensity calculation for GlassCard reactivity
   const intensityRef = useRef<number>(0);
@@ -87,29 +96,6 @@ function App() {
     updateIntensity();
     return () => cancelAnimationFrame(animationId);
   }, [analyser, isPlaying]);
-
-  // Simulate time progression when playing
-  const timeRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    if (isPlaying) {
-      timeRef.current = setInterval(() => {
-        setTrackInfo(prev => ({
-          ...prev,
-          currentTime: prev.currentTime >= prev.duration ? 0 : prev.currentTime + 1,
-        }));
-      }, 1000);
-    } else {
-      if (timeRef.current) {
-        clearInterval(timeRef.current);
-      }
-    }
-    return () => {
-      if (timeRef.current) {
-        clearInterval(timeRef.current);
-      }
-    };
-  }, [isPlaying]);
 
   const toggleUIVisibility = useCallback(() => {
     setSettings({ showGlassCard: !settings.showGlassCard });
@@ -161,36 +147,12 @@ function App() {
       <GlassCard visible={settings.showGlassCard && !transparentMode} intensity={audioIntensity}>
         <AudioPlayerUI
           isPlaying={isPlaying}
-          onPlayPause={isPlaying ? stopAudio : startAudio}
-          onPrevious={() => {
-            const newIndex = (currentTrackIndex - 1 + defaultTracks.length) % defaultTracks.length;
-            setCurrentTrackIndex(newIndex);
-            const track = defaultTracks[newIndex];
-            setTrackInfo({
-              title: track.title,
-              artist: track.artist,
-              trackNumber: newIndex + 1,
-              totalTracks: defaultTracks.length,
-              duration: track.duration,
-              currentTime: 0,
-            });
-          }}
-          onNext={() => {
-            const newIndex = (currentTrackIndex + 1) % defaultTracks.length;
-            setCurrentTrackIndex(newIndex);
-            const track = defaultTracks[newIndex];
-            setTrackInfo({
-              title: track.title,
-              artist: track.artist,
-              trackNumber: newIndex + 1,
-              totalTracks: defaultTracks.length,
-              duration: track.duration,
-              currentTime: 0,
-            });
-          }}
+          onPlayPause={togglePlay}
+          onPrevious={prevTrack}
+          onNext={nextTrack}
           trackInfo={trackInfo}
           analyser={analyser}
-          onSeek={(time) => setTrackInfo(prev => ({ ...prev, currentTime: time }))}
+          onSeek={seek}
           visible={settings.showControls}
           showBranding={settings.showBranding}
           showEQBars={settings.showEQBars}
@@ -203,8 +165,8 @@ function App() {
       {!settings.showGlassCard && (
         <ControlBar 
           isPlaying={isPlaying}
-          onStartAudio={startAudio}
-          onStopAudio={stopAudio}
+          onStartAudio={togglePlay}
+          onStopAudio={togglePlay}
           audioSource={settings.audioSource}
         />
       )}
