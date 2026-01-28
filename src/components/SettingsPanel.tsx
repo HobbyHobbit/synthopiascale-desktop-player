@@ -10,10 +10,9 @@ import {
   Palette,
   Gauge,
   MonitorPlay,
-  Video,
-  Download,
 } from 'lucide-react';
 import { useAppStore, AudioSource, Quality } from '../store/appStore';
+import { RecordingControls } from './RecordingControls';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -287,41 +286,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
           {/* Recording */}
           <section>
-            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
-              <Video className="w-5 h-5 text-primary-solid" />
-              Recording
-            </h3>
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setSettings({ recordingFormat: 'webm' })}
-                  className={`
-                    flex-1 py-3 px-4 rounded-xl transition-all
-                    ${settings.recordingFormat === 'webm'
-                      ? 'bg-primary-solid/20 border-2 border-primary-solid'
-                      : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
-                    }
-                  `}
-                >
-                  WebM Video
-                </button>
-                <button
-                  onClick={() => setSettings({ recordingFormat: 'gif' })}
-                  className={`
-                    flex-1 py-3 px-4 rounded-xl transition-all
-                    ${settings.recordingFormat === 'gif'
-                      ? 'bg-primary-solid/20 border-2 border-primary-solid'
-                      : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
-                    }
-                  `}
-                >
-                  GIF
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Recording feature coming soon. Use screen recording software for now.
-              </p>
-            </div>
+            <RecordingControls />
           </section>
 
           {/* About */}

@@ -23,6 +23,8 @@
     "preview": "vite preview",
     "package": "npm run build && electron-builder --win",
     "package:dir": "npm run build && electron-builder --win --dir",
+    "package:scr": "npm run build && npm run build:screensaver && electron-builder --win",
+    "build:screensaver": "tsc electron/screensaver.ts --outDir dist/electron --esModuleInterop --skipLibCheck",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -89,8 +91,15 @@
       "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SynthopiaScale Visualizer"
+      "shortcutName": "SynthopiaScale Visualizer",
+      "include": "build/installer.nsh"
     },
+    "extraFiles": [
+      {
+        "from": "wallpaper-engine",
+        "to": "wallpaper-engine"
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "HobbyHobbit",

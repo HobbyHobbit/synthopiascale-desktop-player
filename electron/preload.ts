@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+export interface DesktopSource {
+  id: string;
+  name: string;
+  thumbnail: string;
+}
+
 export interface ElectronAPI {
   getDisplays: () => Promise<Array<{
     id: number;
@@ -18,6 +24,7 @@ export interface ElectronAPI {
   setSettings: (settings: Record<string, unknown>) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   installUpdate: () => Promise<void>;
+  getDesktopSources: () => Promise<DesktopSource[]>;
   onToggleTransparentMode: (callback: () => void) => void;
   onOpenSettings: (callback: () => void) => void;
   onUpdateAvailable: (callback: () => void) => void;
@@ -36,6 +43,7 @@ const electronAPI: ElectronAPI = {
   setSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('set-settings', settings),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   installUpdate: () => ipcRenderer.invoke('install-update'),
+  getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
   onToggleTransparentMode: (callback: () => void) => {
     ipcRenderer.on('toggle-transparent-mode', callback);
   },

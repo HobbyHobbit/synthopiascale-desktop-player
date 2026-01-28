@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SynthopiaScale Records Visualizer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f1114;
+    }
+    #app {
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <script>
+    // Wallpaper Engine properties
+    let wpSettings = {
+      intensity: 1.0,
+      primaryColor: { r: 0.83, g: 0.69, b: 0.22 },
+      particlesEnabled: true,
+      plasmaEnabled: true,
+      quality: 1
+    };
+    
+    // Audio data from Wallpaper Engine
+    let audioArray = new Array(128).fill(0);
+    
+    // Wallpaper Engine listener
+    window.wallpaperPropertyListener = {
+      applyUserProperties: function(properties) {
+        if (properties.intensity) {
+          wpSettings.intensity = properties.intensity.value;
+        }
+        if (properties.primarycolor) {
+          const c = properties.primarycolor.value.split(' ').map(Number);
+          wpSettings.primaryColor = { r: c[0], g: c[1], b: c[2] };
+        }
+        if (properties.particlesenabled) {
+          wpSettings.particlesEnabled = properties.particlesenabled.value;
+        }
+        if (properties.plasmaenabled) {
+          wpSettings.plasmaEnabled = properties.plasmaenabled.value;
+        }
+        if (properties.quality) {
+          wpSettings.quality = properties.quality.value;
+        }
+        if (properties.schemecolor) {
+          const c = properties.schemecolor.value.split(' ').map(Number);
+          wpSettings.primaryColor = { r: c[0], g: c[1], b: c[2] };
+        }
+      }
+    };
+    
+    // Wallpaper Engine audio listener
+    window.wallpaperRegisterAudioListener = function(callback) {
+      window.audioCallback = callback;
+    };
+    
+    if (window.wallpaperRegisterAudioListener) {
+      window.wallpaperRegisterAudioListener(function(audioArrayData) {
+        audioArray = audioArrayData;
+      });
+    }
+    
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 4.2);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0f1114, 1);
+    document.getElementById('app').appendChild(renderer.domElement);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+    scene.add(ambientLight);
+    
+    const directionalLight1 = new THREE.DirectionalLight(0xa0c4ff, 0.4);
+    directionalLight1.position.set(-3, 2, -5);
+    scene.add(directionalLight1);
+    
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight2.position.set(2, 3, 5);
+    scene.add(directionalLight2);
+    
+    // Frame geometry helpers
+    function createRectFrameGeometry(width, height, thickness, depth) {
+      const shape = new THREE.Shape();
+      const halfW = width / 2, halfH = height / 2;
+      const innerHalfW = halfW - thickness, innerHalfH = halfH - thickness;
+      
+      shape.moveTo(-halfW, -halfH);
+      shape.lineTo(halfW, -halfH);
+      shape.lineTo(halfW, halfH);
+      shape.lineTo(-halfW, halfH);
+      shape.closePath();
+      
+      const hole = new THREE.Path();
+      hole.moveTo(-innerHalfW, -innerHalfH);
+      hole.lineTo(innerHalfW, -innerHalfH);
+      hole.lineTo(innerHalfW, innerHalfH);
+      hole.lineTo(-innerHalfW, innerHalfH);
+      hole.closePath();
+      shape.holes.push(hole);
+      
+      return new THREE.ExtrudeGeometry(shape, {
+        depth: depth,
+        bevelEnabled: true,
+        bevelThickness: 0.04,
+        bevelSize: 0.03,
+        bevelSegments: 2
+      });
+    }
+    
+    function createPentagonFrameGeometry(radius, thickness, depth) {
+      const shape = new THREE.Shape();
+      const innerRadius = radius - thickness;
+      
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+      }
+      shape.closePath();
+      
+      const hole = new THREE.Path();
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * innerRadius;
+        const y = Math.sin(angle) * innerRadius;
+        if (i === 0) hole.moveTo(x, y);
+        else hole.lineTo(x, y);
+      }
+      hole.closePath();
+      shape.holes.push(hole);
+      
+      return new THREE.ExtrudeGeometry(shape, {
+        depth: depth,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelSegments: 2
+      });
+    }
+    
+    // Materials
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      metalness: 0,
+      roughness: 0.05,
+      transmission: 0.9,
+      thickness: 0.5,
+      transparent: true,
+      opacity: 0.8
+    });
+    
+    const goldMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffd700,
+      metalness: 1,
+      roughness: 0.18,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.1
+    });
+    
+    const silverMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xc0c0c0,
+      metalness: 1,
+      roughness: 0.22,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.15
+    });
+    
+    // Create frames
+    const FRAME_ROTATION = -0.665;
+    
+    const glassFrame = new THREE.Mesh(createRectFrameGeometry(1.96, 2.26, 0.2, 0.14), glassMaterial);
+    glassFrame.position.z = 0.1;
+    glassFrame.rotation.z = FRAME_ROTATION;
+    scene.add(glassFrame);
+    
+    const goldPentagon = new THREE.Mesh(createPentagonFrameGeometry(1.47, 0.2, 0.11), goldMaterial);
+    goldPentagon.position.z = -0.15;
+    goldPentagon.rotation.z = FRAME_ROTATION + 0.26;
+    scene.add(goldPentagon);
+    
+    const silverPentagon = new THREE.Mesh(createPentagonFrameGeometry(1.47, 0.2, 0.11), silverMaterial);
+    silverPentagon.position.z = -0.46;
+    silverPentagon.rotation.z = FRAME_ROTATION - 0.26;
+    scene.add(silverPentagon);
+    
+    // Staircase
+    const stepGeometry = new THREE.BoxGeometry(0.42, 0.095, 0.105);
+    const stairs = [];
+    for (let i = 0; i < 7; i++) {
+      const step = new THREE.Mesh(stepGeometry, glassMaterial);
+      stairs.push(step);
+      scene.add(step);
+    }
+    
+    // Plasma lightning lines
+    const plasmaLines = [];
+    const tendrilCount = 72;
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
+    
+    for (let i = 0; i < tendrilCount; i++) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(30); // 10 points * 3 coords
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const line = new THREE.Line(geometry, lineMaterial.clone());
+      line.visible = false;
+      plasmaLines.push(line);
+      scene.add(line);
+    }
+    
+    // Particle system
+    const particleCount = 50;
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleSizes = new Float32Array(particleCount);
+    
+    for (let i = 0; i < particleCount; i++) {
+      particlePositions[i * 3] = (Math.random() - 0.5) * 10;
+      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 6;
+      particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 4 - 2;
+      particleSizes[i] = Math.random() * 0.1 + 0.02;
+    }
+    
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+    
+    const particleMaterial = new THREE.PointsMaterial({
+      color: 0xd4af37,
+      size: 0.05,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particles);
+    
+    // Helper functions
+    function seededRandom(seed) {
+      const x = Math.sin(seed * 9999) * 10000;
+      return x - Math.floor(x);
+    }
+    
+    function getAudioIntensity() {
+      if (!audioArray || audioArray.length === 0) return { bass: 0, mid: 0, high: 0 };
+      const third = Math.floor(audioArray.length / 3);
+      let bass = 0, mid = 0, high = 0;
+      for (let i = 0; i < third; i++) bass += audioArray[i];
+      for (let i = third; i < third * 2; i++) mid += audioArray[i];
+      for (let i = third * 2; i < audioArray.length; i++) high += audioArray[i];
+      return {
+        bass: (bass / third) * wpSettings.intensity,
+        mid: (mid / third) * wpSettings.intensity,
+        high: (high / third) * wpSettings.intensity
+      };
+    }
+    
+    // Animation
+    const clock = new THREE.Clock();
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      const time = clock.getElapsedTime();
+      const audio = getAudioIntensity();
+      
+      // Camera sway
+      camera.position.x = Math.sin(time * 0.15) * 0.08;
+      camera.position.y = Math.cos(time * 0.1) * 0.05;
+      
+      // Pentagon rotation
+      goldPentagon.rotation.z = FRAME_ROTATION + 0.26 - time * 0.15;
+      silverPentagon.rotation.z = FRAME_ROTATION - 0.26 + time * 0.15;
+      
+      // Light rotation
+      directionalLight1.position.x = -3 - Math.sin(time * 0.15) * 2;
+      directionalLight1.position.y = 2 + Math.cos(time * 0.15) * 1.5;
+      
+      // Staircase animation
+      const cos45 = Math.cos(FRAME_ROTATION);
+      const sin45 = Math.sin(FRAME_ROTATION);
+      const innerW = 1.56, innerH = 1.86;
+      const startX = (innerW/2) * cos45 - (-innerH/2) * sin45;
+      const startY = (innerW/2) * sin45 + (-innerH/2) * cos45;
+      const endX = (innerW/2) * cos45 - (innerH/2) * sin45;
+      const endY = (innerW/2) * sin45 + (innerH/2) * cos45;
+      
+      const animOffset = 1 - ((time * 0.3) % 1);
+      for (let i = 0; i < 7; i++) {
+        const progress = ((i / 7) + animOffset) % 1;
+        const idx = progress * 7;
+        const x = startX + (idx / 7) * (endX - startX);
+        const y = startY + (idx / 7) * (endY - startY);
+        const bounce = audio.bass * Math.sin(time * 8 + i) * 0.015;
+        stairs[i].position.set(x, y, 0.16 + bounce);
+        stairs[i].rotation.z = FRAME_ROTATION;
+      }
+      
+      // Plasma lightning
+      if (wpSettings.plasmaEnabled) {
+        for (let i = 0; i < tendrilCount; i++) {
+          const binIndex = Math.floor((i / tendrilCount) * 32);
+          const rawValue = audioArray[binIndex] || 0;
+          const threshold = 0.25 + seededRandom(i * 31) * 0.15;
+          const intensity = rawValue > threshold ? ((rawValue - threshold) / (1 - threshold)) * wpSettings.intensity : 0;
+          
+          if (intensity < 0.15) {
+            plasmaLines[i].visible = false;
+            continue;
+          }
+          
+          plasmaLines[i].visible = true;
+          const angle = (i / tendrilCount) * Math.PI * 2 - Math.PI / 2;
+          const length = 0.115 + intensity * 0.875;
+          
+          const positions = plasmaLines[i].geometry.attributes.position.array;
+          for (let j = 0; j < 10; j++) {
+            const t = j / 9;
+            const baseX = Math.cos(angle) * length * t;
+            const baseY = Math.sin(angle) * length * t;
+            const noise = Math.sin(time * 4 + j * 1.2 + i * 0.1) * 0.06 * Math.sin(t * Math.PI);
+            positions[j * 3] = baseX + (-Math.sin(angle)) * noise;
+            positions[j * 3 + 1] = baseY + Math.cos(angle) * noise;
+            positions[j * 3 + 2] = -0.025 + Math.cos(time * 7 + j) * 0.02 * Math.sin(t * Math.PI);
+          }
+          plasmaLines[i].geometry.attributes.position.needsUpdate = true;
+          
+          // Color based on intensity
+          const r = Math.min(255, 255 - intensity * 80);
+          const g = Math.min(255, 255 - intensity * 40);
+          plasmaLines[i].material.color.setRGB(r/255, g/255, 1);
+        }
+      } else {
+        plasmaLines.forEach(line => line.visible = false);
+      }
+      
+      // Particles
+      particles.visible = wpSettings.particlesEnabled;
+      if (wpSettings.particlesEnabled) {
+        const pos = particles.geometry.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+          pos[i * 3] += Math.sin(time + i) * 0.001;
+          pos[i * 3 + 1] += Math.cos(time * 0.7 + i) * 0.001;
+          if (pos[i * 3] > 5) pos[i * 3] = -5;
+          if (pos[i * 3 + 1] > 3) pos[i * 3 + 1] = -3;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+        
+        const c = wpSettings.primaryColor;
+        particleMaterial.color.setRGB(c.r, c.g, c.b);
+      }
+      
+      renderer.render(scene, camera);
+    }
+    
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    animate();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, shell, desktopCapturer } from 'electron';
 import * as path from 'path';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
@@ -109,7 +109,7 @@ function createTray(): void {
     ? path.join(__dirname, '../../build/icon.ico')
     : path.join(process.resourcesPath, 'assets/icon.ico');
 
-  let icon: nativeImage;
+  let icon: Electron.NativeImage;
   try {
     icon = nativeImage.createFromPath(iconPath);
   } catch {
@@ -234,6 +234,18 @@ ipcMain.handle('set-settings', (_, settings: Record<string, unknown>) => {
 
 ipcMain.handle('open-external', (_, url: string) => {
   shell.openExternal(url);
+});
+
+ipcMain.handle('get-desktop-sources', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['window', 'screen'],
+    thumbnailSize: { width: 150, height: 150 },
+  });
+  return sources.map((source) => ({
+    id: source.id,
+    name: source.name,
+    thumbnail: source.thumbnail.toDataURL(),
+  }));
 });
 
 // App lifecycle
