@@ -1,0 +1,100 @@
+{
+  "name": "synthopiascale-desktop-visualizer",
+  "productName": "SynthopiaScale Desktop Visualizer",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Audio-reactive 3D visualizer featuring the SynthopiaScale Records logo with plasma effects, glass morphism, and real-time audio analysis",
+  "main": "dist/electron/main.js",
+  "author": {
+    "name": "SynthopiaScale Records",
+    "email": "contact@synthopiascale.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HobbyHobbit/synthopiascale-desktop-player.git"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 && electron .",
+    "build": "tsc && vite build && npm run build:electron",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "preview": "vite preview",
+    "package": "npm run build && electron-builder --win",
+    "package:dir": "npm run build && electron-builder --win --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.12",
+    "@react-three/postprocessing": "^2.15.11",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7",
+    "lucide-react": "^0.303.0",
+    "postprocessing": "^6.34.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.160.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "@types/three": "^0.160.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.synthopiascale.desktop-visualizer",
+    "productName": "SynthopiaScale Desktop Visualizer",
+    "copyright": "Copyright © 2024 SynthopiaScale Records",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SynthopiaScale Visualizer"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "HobbyHobbit",
+      "repo": "synthopiascale-desktop-player"
+    }
+  }
+}
