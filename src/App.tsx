@@ -7,6 +7,7 @@ import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { useAppStore } from './store/appStore';
 import { useAudioSystem } from './hooks/useAudioSystem';
+import { defaultTracks } from './data/tracks';
 import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff } from 'lucide-react';
 
 declare global {
@@ -44,15 +45,48 @@ function App() {
   const { settings, loadSettings, setSettings } = useAppStore();
   const { analyser, isPlaying, startAudio, stopAudio } = useAudioSystem();
   
-  // Simulated track info (in real app, this would come from audio metadata or Spotify/Tidal API)
+  // Track index and info from real tracks
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [audioIntensity, setAudioIntensity] = useState(0);
+  const currentTrack = defaultTracks[currentTrackIndex];
+  
   const [trackInfo, setTrackInfo] = useState<TrackInfo>({
-    title: 'Let Them Collide (GER Edition)',
-    artist: 'SynthopiaScale Records',
-    trackNumber: 3,
-    totalTracks: 3,
-    duration: 261, // 4:21
-    currentTime: 248, // 4:08
+    title: currentTrack.title,
+    artist: currentTrack.artist,
+    trackNumber: currentTrackIndex + 1,
+    totalTracks: defaultTracks.length,
+    duration: currentTrack.duration,
+    currentTime: 0,
   });
+
+  // Audio intensity calculation for GlassCard reactivity
+  const intensityRef = useRef<number>(0);
+  useEffect(() => {
+    if (!analyser || !isPlaying) {
+      setAudioIntensity(prev => prev * 0.95); // Fade out
+      return;
+    }
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    let animationId: number;
+
+    const updateIntensity = () => {
+      analyser.getByteFrequencyData(dataArray);
+      // Calculate bass-focused intensity (first 1/3 of frequencies)
+      const third = Math.floor(dataArray.length / 3);
+      let sum = 0;
+      for (let i = 0; i < third; i++) {
+        sum += dataArray[i];
+      }
+      const newIntensity = (sum / third) / 255;
+      intensityRef.current = intensityRef.current * 0.8 + newIntensity * 0.2; // Smooth
+      setAudioIntensity(intensityRef.current);
+      animationId = requestAnimationFrame(updateIntensity);
+    };
+
+    updateIntensity();
+    return () => cancelAnimationFrame(animationId);
+  }, [analyser, isPlaying]);
 
   // Simulate time progression when playing
   const timeRef = useRef<NodeJS.Timeout | null>(null);
@@ -124,12 +158,36 @@ function App() {
       />
 
       {/* Glass Card Overlay with Audio Player UI */}
-      <GlassCard visible={settings.showGlassCard && !transparentMode}>
+      <GlassCard visible={settings.showGlassCard && !transparentMode} intensity={audioIntensity}>
         <AudioPlayerUI
           isPlaying={isPlaying}
           onPlayPause={isPlaying ? stopAudio : startAudio}
-          onPrevious={() => setTrackInfo(prev => ({ ...prev, currentTime: 0 }))}
-          onNext={() => setTrackInfo(prev => ({ ...prev, currentTime: 0 }))}
+          onPrevious={() => {
+            const newIndex = (currentTrackIndex - 1 + defaultTracks.length) % defaultTracks.length;
+            setCurrentTrackIndex(newIndex);
+            const track = defaultTracks[newIndex];
+            setTrackInfo({
+              title: track.title,
+              artist: track.artist,
+              trackNumber: newIndex + 1,
+              totalTracks: defaultTracks.length,
+              duration: track.duration,
+              currentTime: 0,
+            });
+          }}
+          onNext={() => {
+            const newIndex = (currentTrackIndex + 1) % defaultTracks.length;
+            setCurrentTrackIndex(newIndex);
+            const track = defaultTracks[newIndex];
+            setTrackInfo({
+              title: track.title,
+              artist: track.artist,
+              trackNumber: newIndex + 1,
+              totalTracks: defaultTracks.length,
+              duration: track.duration,
+              currentTime: 0,
+            });
+          }}
           trackInfo={trackInfo}
           analyser={analyser}
           onSeek={(time) => setTrackInfo(prev => ({ ...prev, currentTime: time }))}
