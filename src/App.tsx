@@ -1,11 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Visualizer } from './components/Visualizer';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ControlBar } from './components/ControlBar';
 import { ParticleBackground } from './components/ParticleBackground';
+import { GlassCard } from './components/GlassCard';
+import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { useAppStore } from './store/appStore';
 import { useAudioSystem } from './hooks/useAudioSystem';
-import { Settings, Minimize2, Maximize2 } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -39,8 +41,45 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
-  const { settings, loadSettings } = useAppStore();
+  const { settings, loadSettings, setSettings } = useAppStore();
   const { analyser, isPlaying, startAudio, stopAudio } = useAudioSystem();
+  
+  // Simulated track info (in real app, this would come from audio metadata or Spotify/Tidal API)
+  const [trackInfo, setTrackInfo] = useState<TrackInfo>({
+    title: 'Let Them Collide (GER Edition)',
+    artist: 'SynthopiaScale Records',
+    trackNumber: 3,
+    totalTracks: 3,
+    duration: 261, // 4:21
+    currentTime: 248, // 4:08
+  });
+
+  // Simulate time progression when playing
+  const timeRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (isPlaying) {
+      timeRef.current = setInterval(() => {
+        setTrackInfo(prev => ({
+          ...prev,
+          currentTime: prev.currentTime >= prev.duration ? 0 : prev.currentTime + 1,
+        }));
+      }, 1000);
+    } else {
+      if (timeRef.current) {
+        clearInterval(timeRef.current);
+      }
+    }
+    return () => {
+      if (timeRef.current) {
+        clearInterval(timeRef.current);
+      }
+    };
+  }, [isPlaying]);
+
+  const toggleUIVisibility = useCallback(() => {
+    setSettings({ showGlassCard: !settings.showGlassCard });
+  }, [settings.showGlassCard, setSettings]);
 
   useEffect(() => {
     loadSettings();
@@ -63,9 +102,6 @@ function App() {
     }
   }, [isFullscreen]);
 
-  const minimizeToTray = useCallback(() => {
-    window.electronAPI?.minimizeToTray();
-  }, []);
 
   return (
     <div 
@@ -87,22 +123,53 @@ function App() {
         plasmaEnabled={settings.plasmaEnabled}
       />
 
-      {/* Control Bar */}
-      <ControlBar 
-        isPlaying={isPlaying}
-        onStartAudio={startAudio}
-        onStopAudio={stopAudio}
-        audioSource={settings.audioSource}
-      />
+      {/* Glass Card Overlay with Audio Player UI */}
+      <GlassCard visible={settings.showGlassCard && !transparentMode}>
+        <AudioPlayerUI
+          isPlaying={isPlaying}
+          onPlayPause={isPlaying ? stopAudio : startAudio}
+          onPrevious={() => setTrackInfo(prev => ({ ...prev, currentTime: 0 }))}
+          onNext={() => setTrackInfo(prev => ({ ...prev, currentTime: 0 }))}
+          trackInfo={trackInfo}
+          analyser={analyser}
+          onSeek={(time) => setTrackInfo(prev => ({ ...prev, currentTime: time }))}
+          visible={settings.showControls}
+          showBranding={settings.showBranding}
+          showEQBars={settings.showEQBars}
+          showTimeline={settings.showTimeline}
+          showTrackInfo={settings.showTrackInfo}
+        />
+      </GlassCard>
+
+      {/* Minimal Control Bar (when glass card is hidden) */}
+      {!settings.showGlassCard && (
+        <ControlBar 
+          isPlaying={isPlaying}
+          onStartAudio={startAudio}
+          onStopAudio={stopAudio}
+          audioSource={settings.audioSource}
+        />
+      )}
 
       {/* Top Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+        <button
+          onClick={toggleUIVisibility}
+          className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
+          title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
+        >
+          {settings.showGlassCard ? (
+            <EyeOff className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+          ) : (
+            <Eye className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+          )}
+        </button>
         <button
           onClick={() => setShowSettings(true)}
           className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
           title="Settings"
         >
-          <Settings className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+          <SettingsIcon className="w-5 h-5 text-foreground/70 hover:text-foreground" />
         </button>
         <button
           onClick={toggleFullscreen}
@@ -117,13 +184,15 @@ function App() {
         </button>
       </div>
 
-      {/* Branding */}
-      <div className="absolute bottom-4 left-4 z-40">
-        <h1 className="text-lg font-semibold text-foreground/80">
-          <span className="text-primary-solid">SynthopiaScale</span> Records
-        </h1>
-        <p className="text-xs text-muted-foreground">Desktop Visualizer</p>
-      </div>
+      {/* Branding (when glass card is hidden) */}
+      {!settings.showGlassCard && (
+        <div className="absolute bottom-4 left-4 z-40">
+          <h1 className="text-lg font-semibold text-foreground/80">
+            <span className="text-primary-solid">SynthopiaScale</span> Records
+          </h1>
+          <p className="text-xs text-muted-foreground">Desktop Visualizer</p>
+        </div>
+      )}
 
       {/* Settings Panel */}
       {showSettings && (

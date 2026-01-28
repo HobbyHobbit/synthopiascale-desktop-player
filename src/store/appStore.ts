@@ -13,6 +13,13 @@ export interface Settings {
   alwaysOnTop: boolean;
   recordingEnabled: boolean;
   recordingFormat: 'webm' | 'gif';
+  // UI visibility settings
+  showGlassCard: boolean;
+  showBranding: boolean;
+  showControls: boolean;
+  showTrackInfo: boolean;
+  showEQBars: boolean;
+  showTimeline: boolean;
 }
 
 interface AppState {
@@ -46,6 +53,13 @@ const defaultSettings: Settings = {
   alwaysOnTop: false,
   recordingEnabled: false,
   recordingFormat: 'webm',
+  // UI visibility defaults
+  showGlassCard: true,
+  showBranding: true,
+  showControls: true,
+  showTrackInfo: true,
+  showEQBars: true,
+  showTimeline: true,
 };
 
 export const useAppStore = create<AppState>((set, get) => ({

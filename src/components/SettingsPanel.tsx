@@ -10,6 +10,10 @@ import {
   Palette,
   Gauge,
   MonitorPlay,
+  Layers,
+  Type,
+  BarChart2,
+  Clock,
 } from 'lucide-react';
 import { useAppStore, AudioSource, Quality } from '../store/appStore';
 import { RecordingControls } from './RecordingControls';
@@ -281,6 +285,67 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+
+          {/* UI Visibility */}
+          <section>
+            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
+              <Layers className="w-5 h-5 text-primary-solid" />
+              UI Overlay
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Toggle UI elements to see the visualizer more clearly
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  Glass Card Overlay
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showGlassCard}
+                  onChange={(e) => setSettings({ showGlassCard: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Type className="w-4 h-4" />
+                  Branding & Text
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showBranding}
+                  onChange={(e) => setSettings({ showBranding: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <BarChart2 className="w-4 h-4" />
+                  EQ Bars
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showEQBars}
+                  onChange={(e) => setSettings({ showEQBars: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Timeline & Track Info
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showTimeline}
+                  onChange={(e) => setSettings({ showTimeline: e.target.checked, showTrackInfo: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
             </div>
           </section>
 
