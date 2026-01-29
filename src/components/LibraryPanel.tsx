@@ -343,6 +343,7 @@ export function LibraryPanel({
           {!isCurrentTrack && (
             <button
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 if (isQueueView) {
                   handleQueueTrackClick(index);
@@ -350,9 +351,10 @@ export function LibraryPanel({
                   handleLibraryTrackPlay(track.id);
                 }
               }}
-              className="hidden group-hover:block hover:scale-110 transition-transform"
+              onMouseDown={(e) => e.stopPropagation()}
+              className="hidden group-hover:flex items-center justify-center w-6 h-6 hover:scale-110 transition-transform z-10"
             >
-              <Play className="w-4 h-4 text-white/60 hover:text-white" />
+              <Play className="w-4 h-4 text-white/60 hover:text-white fill-current" />
             </button>
           )}
         </div>

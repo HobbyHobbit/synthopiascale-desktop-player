@@ -183,14 +183,15 @@ export function AudioVisualizer3D({
     });
   }, [visibleTendrilCount]);
 
-  // Always render when playing, fade out when stopped
-  const hasData = frequencyDataRef.current.some((v) => v > 0.01);
-  if (!isPlaying && !hasData) return null;
-
+  // Always render - show idle animation when not playing
   return (
     <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>
       {tendrils.map((t, i) => {
-        const intensity = frequencyDataRef.current[t.dataIndex] || 0;
+        const dataIntensity = frequencyDataRef.current[t.dataIndex] || 0;
+        // Show idle animation with minimum intensity when no audio
+        const minIntensity = 0.15 + Math.sin(timeRef.current * 2 + i * 0.3) * 0.08;
+        const intensity = Math.max(dataIntensity, isPlaying ? 0 : minIntensity);
+        
         if (intensity < 0.05) return null;
 
         // Length always at max (maxOuterRadius), intensity only affects color/animation

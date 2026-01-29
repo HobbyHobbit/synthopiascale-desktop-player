@@ -167,7 +167,7 @@ export function NowPlayingBar({
         />
       </div>
 
-      <div className="flex items-center h-24 px-6 gap-4">
+      <div className="flex items-center h-28 px-6 gap-4">
         {/* Track Info (Left) */}
         <div
           className="flex items-center gap-3 w-72 min-w-0 flex-shrink-0"
