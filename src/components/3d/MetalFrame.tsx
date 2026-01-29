@@ -38,7 +38,8 @@ function createRectFrameGeometry(
   width: number,
   height: number,
   thickness: number,
-  depth: number
+  depth: number,
+  lowQuality: boolean = false
 ): ExtrudeGeometry {
   const halfW = width / 2;
   const halfH = height / 2;
@@ -62,10 +63,10 @@ function createRectFrameGeometry(
 
   return new ExtrudeGeometry(shape, {
     depth,
-    bevelEnabled: true,
-    bevelThickness: 0.04,
-    bevelSize: 0.03,
-    bevelSegments: 2,
+    bevelEnabled: !lowQuality,
+    bevelThickness: lowQuality ? 0 : 0.04,
+    bevelSize: lowQuality ? 0 : 0.03,
+    bevelSegments: lowQuality ? 0 : 2,
   });
 }
 
@@ -74,7 +75,8 @@ function createIrregularPentagonFrameGeometry(
   thickness: number,
   depth: number,
   sideLengths: [number, number, number, number, number],
-  mirrored: boolean = false
+  mirrored: boolean = false,
+  lowQuality: boolean = false
 ): ExtrudeGeometry {
   const baseAngles = [
     -Math.PI / 2,
@@ -121,10 +123,10 @@ function createIrregularPentagonFrameGeometry(
 
   return new ExtrudeGeometry(shape, {
     depth,
-    bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.02,
-    bevelSegments: 2,
+    bevelEnabled: !lowQuality,
+    bevelThickness: lowQuality ? 0 : 0.03,
+    bevelSize: lowQuality ? 0 : 0.02,
+    bevelSegments: lowQuality ? 0 : 2,
   });
 }
 
@@ -148,21 +150,28 @@ export interface MetalFrameProps {
   rotationEnabled?: boolean;
 }
 
-function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'high' }) {
+function FrontGlassFrame({ quality = 'high' }: { quality?: 'low' | 'high' }) {
+  const isLowQuality = quality === 'low';
   const geometry = useMemo(
     () =>
       createRectFrameGeometry(
         FRONT_FRAME_WIDTH,
         FRONT_FRAME_HEIGHT,
         FRONT_FRAME_THICKNESS,
-        FRONT_FRAME_DEPTH
+        FRONT_FRAME_DEPTH,
+        isLowQuality
       ),
-    []
+    [isLowQuality]
   );
+
+  // Use simpler material in low quality mode
+  const materialProps = isLowQuality
+    ? { ...GLASS_MATERIAL_PROPS, clearcoat: 0, transmission: 0.7 }
+    : GLASS_MATERIAL_PROPS;
 
   return (
     <mesh geometry={geometry} position={[0, 0, 0.1]} rotation={[0, 0, FRONT_FRAME_ROTATION]}>
-      <meshPhysicalMaterial {...GLASS_MATERIAL_PROPS} />
+      <meshPhysicalMaterial {...materialProps} />
     </mesh>
   );
 }
@@ -171,6 +180,7 @@ function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37', rotati
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION + 0.26;
   const frameCountRef = useRef(0);
+  const isLowQuality = quality === 'low';
 
   const geometry = useMemo(
     () =>
@@ -179,9 +189,10 @@ function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37', rotati
         BACK_PENTAGON_THICKNESS,
         BACK_PENTAGON_DEPTH,
         PENTAGON_SIDE_LENGTHS,
-        false
+        false,
+        isLowQuality
       ),
-    []
+    [isLowQuality]
   );
 
   useFrame((state) => {
@@ -210,6 +221,7 @@ function BackSilverPentagon({ quality = 'high', rotationEnabled = true }: { qual
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION - 0.26;
   const frameCountRef = useRef(0);
+  const isLowQuality = quality === 'low';
 
   const geometry = useMemo(
     () =>
@@ -218,9 +230,10 @@ function BackSilverPentagon({ quality = 'high', rotationEnabled = true }: { qual
         BACK_PENTAGON_THICKNESS,
         BACK_PENTAGON_DEPTH,
         PENTAGON_SIDE_LENGTHS,
-        true
+        true,
+        isLowQuality
       ),
-    []
+    [isLowQuality]
   );
 
   useFrame((state) => {

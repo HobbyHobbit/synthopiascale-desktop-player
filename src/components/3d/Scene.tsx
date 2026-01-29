@@ -5,7 +5,7 @@ import { Group, DirectionalLight } from 'three';
 import { MetalFrame } from './MetalFrame';
 import { Staircase } from './Staircase';
 import { Effects } from './Effects';
-import { AudioVisualizer3D } from './AudioVisualizer3D';
+import { PlasmaVisualizer3D } from './PlasmaVisualizer3D';
 import { FireVisualizer3D } from './FireVisualizer3D';
 import { WaterVisualizer3D } from './WaterVisualizer3D';
 
@@ -87,9 +87,9 @@ export const Scene = memo(function Scene({
 
       {/* Logo Group */}
       <group ref={logoGroupRef}>
-        {/* Audio Visualizer - shown when plasmaEnabled is true (independent of glassCard) */}
+        {/* Visualizer - shown when plasmaEnabled is true (independent of glassCard) */}
         {plasmaEnabled && visualizerType === 'plasma' && (
-          <AudioVisualizer3D
+          <PlasmaVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}
             intensity={intensity}

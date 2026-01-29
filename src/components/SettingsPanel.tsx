@@ -51,7 +51,7 @@ const colorPresets = [
 ];
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const { settings, setSettings, displays } = useAppStore();
+  const { settings, setSettings, setPerformanceMode, displays } = useAppStore();
   const { currentThemeId, setTheme, getAllThemes } = useThemeStore();
   const [alwaysOnTop, setAlwaysOnTopState] = useState(false);
   const themes = getAllThemes();
@@ -351,7 +351,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               {qualityOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setSettings({ quality: option.value })}
+                  onClick={() => setPerformanceMode(option.value === 'low')}
                   className={`
                     flex-1 py-3 px-4 rounded-xl transition-all
                     ${settings.quality === option.value
@@ -364,6 +364,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </button>
               ))}
             </div>
+            {settings.quality === 'low' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Performance-Modus: Effekte und Animationen werden automatisch deaktiviert.
+              </p>
+            )}
           </section>
 
           {/* Window Settings */}

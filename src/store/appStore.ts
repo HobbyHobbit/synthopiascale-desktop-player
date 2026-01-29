@@ -27,6 +27,16 @@ export interface Settings {
   showTimeline: boolean;
 }
 
+// Settings that are automatically disabled in performance mode
+const PERFORMANCE_MODE_DISABLED_SETTINGS: (keyof Settings)[] = [
+  'particlesEnabled',
+  'particleHoverEnabled',
+  'rotationEnabled',
+  'showGlassCard',
+  'showBranding',
+  'showEQBars',
+];
+
 interface AppState {
   settings: Settings;
   displays: Array<{
@@ -38,7 +48,9 @@ interface AppState {
   }>;
   currentDisplay: number;
   isRecording: boolean;
+  previousHighQualitySettings: Partial<Settings> | null;
   setSettings: (settings: Partial<Settings>) => void;
+  setPerformanceMode: (enabled: boolean) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
   setDisplays: (displays: AppState['displays']) => void;
@@ -73,11 +85,53 @@ export const useAppStore = create<AppState>((set, get) => ({
   displays: [],
   currentDisplay: 0,
   isRecording: false,
+  previousHighQualitySettings: null,
 
   setSettings: (newSettings) => {
     set((state) => ({
       settings: { ...state.settings, ...newSettings },
     }));
+    get().saveSettings();
+  },
+
+  setPerformanceMode: (enabled: boolean) => {
+    const state = get();
+    
+    if (enabled) {
+      // Save current settings before switching to performance mode
+      const settingsToSave: Partial<Settings> = {};
+      for (const key of PERFORMANCE_MODE_DISABLED_SETTINGS) {
+        settingsToSave[key] = state.settings[key] as never;
+      }
+      
+      // Disable all performance-heavy features
+      const performanceSettings: Partial<Settings> = {
+        quality: 'low',
+        particlesEnabled: false,
+        particleHoverEnabled: false,
+        rotationEnabled: false,
+        showGlassCard: false,
+        showBranding: false,
+        showEQBars: false,
+      };
+      
+      set({
+        previousHighQualitySettings: settingsToSave,
+        settings: { ...state.settings, ...performanceSettings },
+      });
+    } else {
+      // Restore previous settings when switching back to high quality
+      const restored = state.previousHighQualitySettings || {};
+      set({
+        previousHighQualitySettings: null,
+        settings: { 
+          ...state.settings, 
+          quality: 'high',
+          ...restored,
+        },
+      });
+    }
+    
     get().saveSettings();
   },
 
