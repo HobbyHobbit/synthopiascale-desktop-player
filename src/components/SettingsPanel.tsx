@@ -14,8 +14,11 @@ import {
   Type,
   BarChart2,
   Clock,
+  Sun,
+  Check,
 } from 'lucide-react';
 import { useAppStore, AudioSource, Quality } from '../store/appStore';
+import { useThemeStore } from '../store/themeStore';
 import { RecordingControls } from './RecordingControls';
 
 interface SettingsPanelProps {
@@ -48,7 +51,9 @@ const colorPresets = [
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { settings, setSettings, displays } = useAppStore();
+  const { currentThemeId, setTheme, getAllThemes } = useThemeStore();
   const [alwaysOnTop, setAlwaysOnTopState] = useState(false);
+  const themes = getAllThemes();
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -185,6 +190,69 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   />
                 </label>
               </div>
+            </div>
+          </section>
+
+          {/* Theme Selection */}
+          <section>
+            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
+              <Sun className="w-5 h-5 text-primary-solid" />
+              Theme
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {themes.map((theme) => {
+                const isSelected = currentThemeId === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    onClick={() => setTheme(theme.id)}
+                    className={`
+                      relative p-4 rounded-xl text-left transition-all
+                      ${isSelected 
+                        ? 'ring-2 ring-offset-2 ring-offset-background' 
+                        : 'hover:bg-white/10'
+                      }
+                    `}
+                    style={{
+                      backgroundColor: theme.palette.surface,
+                      borderColor: isSelected ? theme.palette.accent : 'transparent',
+                      borderWidth: '2px',
+                      borderStyle: 'solid',
+                      ['--tw-ring-color' as string]: theme.palette.accent,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Color preview dots */}
+                      <div className="flex gap-1">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: theme.palette.bg }}
+                        />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: theme.palette.accent }}
+                        />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: theme.palette.text }}
+                        />
+                      </div>
+                      <span
+                        className="font-medium"
+                        style={{ color: theme.palette.text }}
+                      >
+                        {theme.name}
+                      </span>
+                      {isSelected && (
+                        <Check
+                          className="w-4 h-4 ml-auto"
+                          style={{ color: theme.palette.accent }}
+                        />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

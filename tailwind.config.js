@@ -7,23 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0f1114',
-        foreground: '#e8eaed',
-        primary: 'rgba(212, 175, 55, 0.6)',
-        'primary-solid': '#d4af37',
+        // Theme-aware colors (use CSS variables)
+        'theme-bg': 'var(--theme-bg)',
+        'theme-surface': 'var(--theme-surface)',
+        'theme-surface-alt': 'var(--theme-surface-alt)',
+        'theme-text': 'var(--theme-text)',
+        'theme-text-soft': 'var(--theme-text-soft)',
+        'theme-accent': 'var(--theme-accent)',
+        'theme-accent-soft': 'var(--theme-accent-soft)',
+        'theme-border': 'var(--theme-border)',
+        // Legacy colors (for backwards compatibility during migration)
+        background: 'var(--theme-bg)',
+        foreground: 'var(--theme-text)',
+        primary: 'var(--theme-accent-soft)',
+        'primary-solid': 'var(--theme-accent)',
         muted: 'rgba(255, 255, 255, 0.04)',
-        'muted-foreground': 'rgba(232, 234, 237, 0.6)',
-        border: 'rgba(200, 205, 210, 0.1)',
-        card: 'rgba(255, 255, 255, 0.05)',
+        'muted-foreground': 'var(--theme-text-soft)',
+        border: 'var(--theme-border)',
+        card: 'var(--theme-surface)',
         gold: {
-          DEFAULT: 'rgba(212, 175, 55, 0.6)',
-          solid: '#d4af37',
-          glow: 'rgba(212, 175, 55, 0.12)',
+          DEFAULT: 'var(--theme-accent-soft)',
+          solid: 'var(--theme-accent)',
+          glow: 'var(--theme-accent-soft)',
         },
         silver: 'rgba(200, 210, 220, 0.4)',
         charcoal: {
-          DEFAULT: '#0f1114',
-          light: '#151719',
+          DEFAULT: 'var(--theme-bg)',
+          light: 'var(--theme-surface)',
         },
       },
       fontFamily: {

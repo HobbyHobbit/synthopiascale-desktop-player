@@ -3,14 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --background: #0f1114;
-  --foreground: #e8eaed;
-  --primary: rgba(212, 175, 55, 0.6);
-  --primary-solid: #d4af37;
+  /* Theme variables - set by ThemeProvider, defaults to SynthopiaScale Gold */
+  --theme-bg: #0a0a0c;
+  --theme-surface: #141418;
+  --theme-surface-alt: #1c1c22;
+  --theme-text: #e8eaf0;
+  --theme-text-soft: #8a8a96;
+  --theme-accent: #d4af37;
+  --theme-accent-soft: rgba(212, 175, 55, 0.3);
+  --theme-border: #2a2a32;
+  
+  /* Legacy mappings for backwards compatibility */
+  --background: var(--theme-bg);
+  --foreground: var(--theme-text);
+  --primary: var(--theme-accent-soft);
+  --primary-solid: var(--theme-accent);
   --glass-bg: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(212, 175, 55, 0.2);
+  --glass-border: color-mix(in srgb, var(--theme-accent) 20%, transparent);
   --glass-blur: 16px;
-  --gold-glow: rgba(212, 175, 55, 0.12);
+  --gold-glow: var(--theme-accent-soft);
 }
 
 * {
@@ -27,8 +38,8 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: linear-gradient(180deg, #0f1114 0%, #0c0d0f 100%);
-  color: var(--foreground);
+  background: var(--theme-bg);
+  color: var(--theme-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
