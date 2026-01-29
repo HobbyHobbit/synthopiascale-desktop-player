@@ -15,6 +15,9 @@ import {
   X,
   ChevronRight,
   Clock,
+  FileAudio,
+  Radio,
+  Headphones,
 } from 'lucide-react';
 import { usePlaylistStore, Playlist, LibraryTrack } from '../store/playlistStore';
 
@@ -24,6 +27,8 @@ interface LibraryPanelProps {
   onPlayTrack: (trackId: string) => void;
   currentTrackId?: string;
   isPlaying: boolean;
+  audioMode?: 'internal' | 'system';
+  onAudioModeChange?: (mode: 'internal' | 'system') => void;
 }
 
 type View = 'playlists' | 'queue' | 'library' | 'playlist-detail';
@@ -34,6 +39,8 @@ export function LibraryPanel({
   onPlayTrack,
   currentTrackId,
   isPlaying,
+  audioMode = 'internal',
+  onAudioModeChange,
 }: LibraryPanelProps) {
   const [view, setView] = useState<View>('queue');
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
@@ -63,6 +70,7 @@ export function LibraryPanel({
     getQueueTracks,
     getPlaylistTracks,
     exportPlaylistAsM3U,
+    addToLibrary,
   } = usePlaylistStore();
 
   const queueTracks = getQueueTracks();
@@ -127,6 +135,77 @@ export function LibraryPanel({
     },
     [setQueue, onPlayTrack]
   );
+
+  // File/Folder picker handlers (Electron)
+  const handleOpenFiles = useCallback(async () => {
+    if (window.electronAPI?.openFiles) {
+      const files = await window.electronAPI.openFiles();
+      if (files && files.length > 0) {
+        const trackIds: string[] = [];
+        files.forEach((file: { path: string; name: string; duration?: number }) => {
+          // Extract title from filename
+          const title = file.name.replace(/\.[^/.]+$/, '');
+          const id = addToLibrary({
+            title,
+            artist: 'Unknown Artist',
+            src: file.path,
+            duration: file.duration || 0,
+            source: 'local',
+          });
+          trackIds.push(id);
+        });
+        // Add to queue
+        addToQueue(trackIds, 'last');
+      }
+    } else {
+      // Fallback for browser - use file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/*';
+      input.multiple = true;
+      input.onchange = (e) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) {
+          const trackIds: string[] = [];
+          Array.from(files).forEach((file) => {
+            const title = file.name.replace(/\.[^/.]+$/, '');
+            const url = URL.createObjectURL(file);
+            const id = addToLibrary({
+              title,
+              artist: 'Unknown Artist',
+              src: url,
+              duration: 0,
+              source: 'local',
+            });
+            trackIds.push(id);
+          });
+          addToQueue(trackIds, 'last');
+        }
+      };
+      input.click();
+    }
+  }, [addToLibrary, addToQueue]);
+
+  const handleOpenFolder = useCallback(async () => {
+    if (window.electronAPI?.openFolder) {
+      const files = await window.electronAPI.openFolder();
+      if (files && files.length > 0) {
+        const trackIds: string[] = [];
+        files.forEach((file: { path: string; name: string; duration?: number }) => {
+          const title = file.name.replace(/\.[^/.]+$/, '');
+          const id = addToLibrary({
+            title,
+            artist: 'Unknown Artist',
+            src: file.path,
+            duration: file.duration || 0,
+            source: 'local',
+          });
+          trackIds.push(id);
+        });
+        addToQueue(trackIds, 'last');
+      }
+    }
+  }, [addToLibrary, addToQueue]);
 
   const handleQueueTrackClick = useCallback(
     (index: number) => {
@@ -299,12 +378,52 @@ export function LibraryPanel({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h2 className="text-lg font-semibold text-white">Library</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5 text-white/60" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Audio Mode Toggle */}
+            <div className="flex items-center bg-white/5 rounded-lg p-0.5 mr-2">
+              <button
+                onClick={() => onAudioModeChange?.('internal')}
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  audioMode === 'internal' ? 'bg-gold/20 text-gold' : 'text-white/50 hover:text-white/80'
+                }`}
+                title="Play local files"
+              >
+                <Headphones className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onAudioModeChange?.('system')}
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  audioMode === 'system' ? 'bg-gold/20 text-gold' : 'text-white/50 hover:text-white/80'
+                }`}
+                title="Capture system audio"
+              >
+                <Radio className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {/* Open Files */}
+            <button
+              onClick={handleOpenFiles}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              title="Open Audio Files"
+            >
+              <FileAudio className="w-4 h-4 text-white/60" />
+            </button>
+            {/* Open Folder */}
+            <button
+              onClick={handleOpenFolder}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              title="Open Folder"
+            >
+              <FolderOpen className="w-4 h-4 text-white/60" />
+            </button>
+            {/* Close */}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5 text-white/60" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs */}

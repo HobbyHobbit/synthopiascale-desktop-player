@@ -1,15 +1,25 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Track, defaultTracks } from '../data/tracks';
+import { defaultTracks } from '../data/tracks';
 import { usePlaylistStore } from '../store/playlistStore';
+
+export interface AudioTrack {
+  id: string;
+  title: string;
+  artist: string;
+  src: string;
+  duration: number;
+  bpm?: number;
+}
 
 interface AudioPlayerState {
   isPlaying: boolean;
-  currentTrack: Track | null;
+  currentTrack: AudioTrack | null;
   currentTrackIndex: number;
   currentTime: number;
   duration: number;
   analyser: AnalyserNode | null;
   volume: number;
+  audioMode: 'internal' | 'system';
 }
 
 interface UseAudioPlayerReturn extends AudioPlayerState {
@@ -18,26 +28,78 @@ interface UseAudioPlayerReturn extends AudioPlayerState {
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
-  setTrack: (index: number) => void;
+  playTrackById: (trackId: string) => void;
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
+  setAudioMode: (mode: 'internal' | 'system') => void;
   audioElement: HTMLAudioElement | null;
+  queueLength: number;
 }
 
 export function useAudioPlayer(): UseAudioPlayerReturn {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [volume, setVolumeState] = useState(0.8);
+  const [audioMode, setAudioModeState] = useState<'internal' | 'system'>('internal');
+  const [initialized, setInitialized] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
-  const currentTrack = defaultTracks[currentTrackIndex] || null;
+  // Get state from playlist store
+  const {
+    queue,
+    queueIndex,
+    library,
+    setQueueIndex,
+    getNextTrackIndex,
+    getPrevTrackIndex,
+    getCurrentTrack,
+    addToLibrary,
+    setQueue,
+  } = usePlaylistStore();
+
+  // Initialize library with default tracks on first load
+  useEffect(() => {
+    if (initialized) return;
+    
+    const libraryKeys = Object.keys(library);
+    if (libraryKeys.length === 0 && defaultTracks.length > 0) {
+      // Import default tracks into library
+      const trackIds: string[] = [];
+      defaultTracks.forEach((track) => {
+        const id = addToLibrary({
+          title: track.title,
+          artist: track.artist,
+          src: track.src,
+          duration: track.duration,
+          source: 'builtin',
+        });
+        trackIds.push(id);
+      });
+      // Set them as the initial queue
+      setQueue(trackIds, 0);
+    }
+    setInitialized(true);
+  }, [initialized, library, addToLibrary, setQueue]);
+
+  // Convert LibraryTrack to AudioTrack
+  const libraryTrack = getCurrentTrack();
+  const currentTrack: AudioTrack | null = libraryTrack ? {
+    id: libraryTrack.id,
+    title: libraryTrack.title,
+    artist: libraryTrack.artist,
+    src: libraryTrack.src,
+    duration: libraryTrack.duration,
+    bpm: libraryTrack.bpm,
+  } : null;
+
+  const currentTrackIndex = queueIndex;
+  const queueLength = queue.length;
 
   // Initialize audio element
   useEffect(() => {
@@ -55,9 +117,10 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         setDuration(audioRef.current?.duration || 0);
       });
 
-      // Ended handler - respect repeat/shuffle
+      // Ended handler - respect repeat/shuffle using store
       audioRef.current.addEventListener('ended', () => {
-        const { repeatMode, shuffleEnabled } = usePlaylistStore.getState();
+        const store = usePlaylistStore.getState();
+        const { repeatMode } = store;
         
         if (repeatMode === 'one') {
           // Repeat current track
@@ -65,23 +128,15 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
             audioRef.current.currentTime = 0;
             audioRef.current.play().catch(console.error);
           }
-        } else if (shuffleEnabled) {
-          // Random track
-          const randomIndex = Math.floor(Math.random() * defaultTracks.length);
-          setCurrentTrackIndex(randomIndex);
-        } else if (repeatMode === 'all') {
-          // Next track, wrap around
-          setCurrentTrackIndex(prev => (prev + 1) % defaultTracks.length);
         } else {
-          // No repeat - stop at end or go to next
-          setCurrentTrackIndex(prev => {
-            const next = prev + 1;
-            if (next >= defaultTracks.length) {
-              setIsPlaying(false);
-              return prev;
-            }
-            return next;
-          });
+          // Use store's getNextTrackIndex which handles shuffle/repeat
+          const nextIndex = store.getNextTrackIndex();
+          if (nextIndex === -1) {
+            // No more tracks
+            setIsPlaying(false);
+          } else {
+            store.setQueueIndex(nextIndex);
+          }
         }
       });
 
@@ -176,9 +231,12 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
   }, [isPlaying, play, pause]);
 
   const nextTrack = useCallback(() => {
-    setCurrentTrackIndex(prev => (prev + 1) % defaultTracks.length);
-    setCurrentTime(0);
-  }, []);
+    const nextIndex = getNextTrackIndex();
+    if (nextIndex !== -1) {
+      setQueueIndex(nextIndex);
+      setCurrentTime(0);
+    }
+  }, [getNextTrackIndex, setQueueIndex]);
 
   const prevTrack = useCallback(() => {
     // If more than 3 seconds in, restart track, otherwise go to previous
@@ -188,16 +246,32 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         setCurrentTime(0);
       }
     } else {
-      setCurrentTrackIndex(prev => (prev - 1 + defaultTracks.length) % defaultTracks.length);
-      setCurrentTime(0);
+      const prevIndex = getPrevTrackIndex();
+      if (prevIndex !== -1) {
+        setQueueIndex(prevIndex);
+        setCurrentTime(0);
+      }
     }
-  }, [currentTime]);
+  }, [currentTime, getPrevTrackIndex, setQueueIndex]);
 
-  const setTrack = useCallback((index: number) => {
-    if (index >= 0 && index < defaultTracks.length) {
-      setCurrentTrackIndex(index);
+  const playTrackById = useCallback((trackId: string) => {
+    const index = queue.indexOf(trackId);
+    if (index !== -1) {
+      setQueueIndex(index);
       setCurrentTime(0);
+      // Auto-play when selecting a track
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(console.error);
+          setIsPlaying(true);
+        }
+      }, 100);
     }
+  }, [queue, setQueueIndex]);
+
+  const setAudioMode = useCallback((mode: 'internal' | 'system') => {
+    setAudioModeState(mode);
+    // TODO: Switch between internal playback and system audio capture
   }, []);
 
   const seek = useCallback((time: number) => {
@@ -240,14 +314,17 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     duration,
     analyser,
     volume,
+    audioMode,
     play,
     pause,
     togglePlay,
     nextTrack,
     prevTrack,
-    setTrack,
+    playTrackById,
     seek,
     setVolume,
+    setAudioMode,
     audioElement: audioRef.current,
+    queueLength,
   };
 }

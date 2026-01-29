@@ -13,8 +13,7 @@ import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useBPMDetector } from './hooks/useBPMDetector';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { defaultTracks } from './data/tracks';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -36,6 +35,8 @@ declare global {
       setSettings: (settings: Record<string, unknown>) => Promise<void>;
       openExternal: (url: string) => Promise<void>;
       installUpdate: () => Promise<void>;
+      openFiles: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
+      openFolder: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
       onToggleTransparentMode: (callback: () => void) => void;
       onOpenSettings: (callback: () => void) => void;
       onUpdateAvailable: (callback: () => void) => void;
@@ -65,6 +66,10 @@ function App() {
     prevTrack,
     seek,
     setVolume,
+    playTrackById,
+    queueLength,
+    audioMode,
+    setAudioMode,
   } = useAudioPlayer();
   
   const [audioIntensity, setAudioIntensity] = useState(0);
@@ -77,7 +82,7 @@ function App() {
     title: currentTrack?.title || 'No Track',
     artist: currentTrack?.artist || 'Unknown',
     trackNumber: currentTrackIndex + 1,
-    totalTracks: defaultTracks.length,
+    totalTracks: queueLength || 1,
     duration: duration || currentTrack?.duration || 0,
     currentTime: currentTime,
   };
@@ -289,12 +294,48 @@ function App() {
       )}
 
       {/* Branding (when glass card is hidden) */}
-      {!settings.showGlassCard && (
-        <div className="absolute bottom-4 left-4 z-40">
+      {!settings.showGlassCard && !studioMode && (
+        <div className="absolute bottom-20 left-4 z-40">
           <h1 className="text-lg font-semibold text-foreground/80">
             <span className="text-primary-solid">SynthopiaScale</span> Records
           </h1>
           <p className="text-xs text-muted-foreground">Desktop Visualizer</p>
+        </div>
+      )}
+
+      {/* Prominent Play Controls - visible when GlassCard is hidden */}
+      {(!settings.showGlassCard || studioMode) && !transparentMode && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
+          {/* Previous */}
+          <button
+            onClick={prevTrack}
+            className="p-3 rounded-full glass hover:bg-white/20 transition-colors"
+            title="Previous Track"
+          >
+            <SkipBack className="w-6 h-6 text-white/80" />
+          </button>
+
+          {/* Play/Pause - Large prominent button */}
+          <button
+            onClick={togglePlay}
+            className="p-5 rounded-full bg-gold/90 hover:bg-gold transition-colors shadow-lg shadow-gold/30"
+            title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+          >
+            {isPlaying ? (
+              <Pause className="w-8 h-8 text-black" />
+            ) : (
+              <Play className="w-8 h-8 text-black ml-1" />
+            )}
+          </button>
+
+          {/* Next */}
+          <button
+            onClick={nextTrack}
+            className="p-3 rounded-full glass hover:bg-white/20 transition-colors"
+            title="Next Track"
+          >
+            <SkipForward className="w-6 h-6 text-white/80" />
+          </button>
         </div>
       )}
 
@@ -321,16 +362,11 @@ function App() {
       <LibraryPanel
         visible={showLibrary}
         onClose={() => setShowLibrary(false)}
-        onPlayTrack={(trackId) => {
-          // For now, find track index from defaultTracks
-          const index = defaultTracks.findIndex(t => String(t.id) === trackId);
-          if (index !== -1) {
-            // Would need to extend useAudioPlayer to support this
-            console.log('Play track:', trackId, index);
-          }
-        }}
-        currentTrackId={currentTrack ? String(currentTrack.id) : undefined}
+        onPlayTrack={playTrackById}
+        currentTrackId={currentTrack?.id}
         isPlaying={isPlaying}
+        audioMode={audioMode}
+        onAudioModeChange={setAudioMode}
       />
 
       {/* Now Playing Bar - shown in studio mode or when glass card is hidden */}
