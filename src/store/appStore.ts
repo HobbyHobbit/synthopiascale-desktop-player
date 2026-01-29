@@ -87,16 +87,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     
     if (enabled) {
-      // Performance mode: GlassCard visible, all heavy animations OFF
+      // Performance mode: GlassCard visible, heavy 3D animations OFF
+      // Keep: branding, EQ bars, track info, timeline
       const performanceSettings: Partial<Settings> = {
         quality: 'low',
         particlesEnabled: false,
         particleHoverEnabled: false,
         plasmaEnabled: false,
         rotationEnabled: false,
-        showGlassCard: true, // GlassCard IS the performance mode UI
-        showBranding: false,
-        // showEQBars stays enabled - it's the visual performance feature
+        showGlassCard: true,
+        // These stay ON in performance mode:
+        showBranding: true,
+        showEQBars: true,
+        showTrackInfo: true,
+        showTimeline: true,
       };
       
       set({
@@ -110,7 +114,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         particleHoverEnabled: true,
         plasmaEnabled: true,
         rotationEnabled: true,
-        showGlassCard: false, // GlassCard hidden in quality mode
+        showGlassCard: false,
         showBranding: true,
       };
       

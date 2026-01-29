@@ -425,26 +425,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             </p>
             <div className="space-y-3">
               <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <div className="flex flex-col">
-                  <span className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Performance Mode
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Reduces animation detail for smooth playback on older systems
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.showGlassCard}
-                  onChange={(e) => setSettings({ 
-                    showGlassCard: e.target.checked,
-                    quality: e.target.checked ? 'low' : 'high'
-                  })}
-                  className="w-5 h-5 accent-primary-solid"
-                />
-              </label>
-              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
                 <span className="flex items-center gap-2">
                   <Type className="w-4 h-4" />
                   Branding & Text

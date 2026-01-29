@@ -13,7 +13,7 @@ import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { Settings as SettingsIcon, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders, Type, BarChart2, Clock } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -307,7 +307,7 @@ function App() {
           <button
             onClick={togglePerformanceMode}
             className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showGlassCard ? 'bg-green-500/20' : ''}`}
-            title={settings.showGlassCard ? 'Disable Performance Mode (High Quality)' : 'Enable Performance Mode (Smooth Playback)'}
+            title={settings.showGlassCard ? 'Quality Mode (alle Effekte an)' : 'Performance Mode (leichtgewichtig)'}
           >
             {settings.showGlassCard ? (
               <Zap className="w-5 h-5 text-green-400" />
@@ -315,6 +315,29 @@ function App() {
               <Zap className="w-5 h-5 text-foreground/70 hover:text-foreground" />
             )}
           </button>
+          <div className="w-px h-6 bg-white/20" />
+          <button
+            onClick={() => setSettings({ showBranding: !settings.showBranding })}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showBranding ? 'bg-gold/20' : ''}`}
+            title="Branding & Text"
+          >
+            <Type className={`w-5 h-5 ${settings.showBranding ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <button
+            onClick={() => setSettings({ showEQBars: !settings.showEQBars })}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showEQBars ? 'bg-gold/20' : ''}`}
+            title="EQ Balken"
+          >
+            <BarChart2 className={`w-5 h-5 ${settings.showEQBars ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <button
+            onClick={() => setSettings({ showTimeline: !settings.showTimeline, showTrackInfo: !settings.showTimeline })}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showTimeline ? 'bg-gold/20' : ''}`}
+            title="Timeline & Track Info"
+          >
+            <Clock className={`w-5 h-5 ${settings.showTimeline ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <div className="w-px h-6 bg-white/20" />
           <button
             onClick={() => setShowSettings(true)}
             className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
