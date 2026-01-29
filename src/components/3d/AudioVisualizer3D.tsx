@@ -159,7 +159,7 @@ export function AudioVisualizer3D({
       const binIndex = lowBin + Math.floor((i / baseTendrilCount) * binRange);
       const rawValue = (dataArray[binIndex] ?? 0) / 255;
 
-      const threshold = 0.25 + seededRandom(i * 31) * 0.15;
+      const threshold = 0.08 + seededRandom(i * 31) * 0.08;
       // Full intensity for length, globalIntensity only affects visible count
       const value = rawValue > threshold ? ((rawValue - threshold) / (1 - threshold)) : 0;
 
@@ -191,7 +191,7 @@ export function AudioVisualizer3D({
     <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>
       {tendrils.map((t, i) => {
         const intensity = frequencyDataRef.current[t.dataIndex] || 0;
-        if (intensity < 0.15) return null;
+        if (intensity < 0.05) return null;
 
         // Length always at max (maxOuterRadius), intensity only affects color/animation
         const length = innerRadius + intensity * (maxOuterRadius - innerRadius);

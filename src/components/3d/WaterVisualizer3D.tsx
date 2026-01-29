@@ -193,8 +193,8 @@ export function WaterVisualizer3D({
 
       const lifeRatio = b.life / b.maxLife;
       
-      // Pulse-driven speed boost (creates wave ripple effect)
-      const pulseBoost = 1 + pulse.current * 1.2;
+      // Pulse-driven speed boost (creates strong wave ripple effect)
+      const pulseBoost = 1 + pulse.current * 2.5;
       
       // Golden ratio wobble for organic bubble motion
       const wobblePhase = time * b.wobbleSpeed * PHI + b.wobblePhase;
@@ -228,9 +228,9 @@ export function WaterVisualizer3D({
       colors[i * 3 + 1] = waterColor.g;
       colors[i * 3 + 2] = waterColor.b;
 
-      // Bubbles grow then shrink, with pulse effect
+      // Bubbles grow then shrink, with strong pulse effect
       const sizePhase = Math.sin(lifeRatio * Math.PI);
-      const sizePulse = 1 + pulse.current * 0.4;
+      const sizePulse = 1 + pulse.current * 1.2;
       sizes[i] = b.size * sizePhase * sizePulse;
     }
 

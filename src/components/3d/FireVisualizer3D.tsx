@@ -154,12 +154,12 @@ export function FireVisualizer3D({
 
       const lifeRatio = p.life / p.maxLife;
       
-      // Pulse-driven speed boost
-      const pulseBoost = 1 + pulse.current * 1.5;
+      // Pulse-driven speed boost - much stronger response
+      const pulseBoost = 1 + pulse.current * 3.0;
       const flicker = Math.sin(time * 15 * PHI + i * 0.3) * 0.3;
-      const speedMod = pulseBoost * (1 + flicker * 0.2);
+      const speedMod = pulseBoost * (1 + flicker * 0.3);
       
-      // Move outward - particles should reach MAX_OUTER_RADIUS
+      // Move outward with strong pulse acceleration
       p.x += p.vx * delta * speedMod;
       p.y += p.vy * delta * speedMod;
       p.z += (goldenRandom(i + Math.floor(time * 20)) - 0.5) * 0.03 * delta;
@@ -179,9 +179,9 @@ export function FireVisualizer3D({
       colors[i * 3 + 1] = fireColor.g;
       colors[i * 3 + 2] = fireColor.b;
 
-      // Size pulses with audio
-      const sizePulse = 1 + pulse.current * 0.5;
-      sizes[i] = p.size * (1 - lifeRatio * 0.7) * sizePulse;
+      // Size pulses strongly with audio
+      const sizePulse = 1 + pulse.current * 1.5;
+      sizes[i] = p.size * (1 - lifeRatio * 0.6) * sizePulse;
     }
 
     const geometry = pointsRef.current.geometry;

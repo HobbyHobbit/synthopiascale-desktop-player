@@ -46,25 +46,28 @@ export function updatePulse(
   delta: number,
   time: number
 ): void {
-  // Detect beat (sudden increase)
-  const threshold = pulse.current + 0.15;
-  if (audioIntensity > threshold && audioIntensity > 0.2) {
-    pulse.peak = Math.min(1, audioIntensity * 1.2);
+  // Detect beat (sudden increase) - more sensitive threshold
+  const threshold = pulse.current + 0.08;
+  if (audioIntensity > threshold && audioIntensity > 0.1) {
+    pulse.peak = Math.min(1.5, audioIntensity * 2.0);
     pulse.attack = 1;
     pulse.lastBeat = time;
   }
   
-  // Attack phase (fast rise)
+  // Attack phase (very fast rise for punchy response)
   if (pulse.attack > 0) {
-    pulse.current = pulse.current + (pulse.peak - pulse.current) * 0.3;
-    pulse.attack -= delta * 8;
+    pulse.current = pulse.current + (pulse.peak - pulse.current) * 0.5;
+    pulse.attack -= delta * 12;
   } else {
-    // Decay phase (slower fall)
-    pulse.current = pulse.current * (1 - delta * 2.5);
+    // Decay phase (moderate fall for visible sustain)
+    pulse.current = pulse.current * (1 - delta * 3.5);
   }
   
+  // Keep minimum pulse based on current audio
+  pulse.current = Math.max(pulse.current, audioIntensity * 0.6);
+  
   // Store decay for visualization effects
-  pulse.decay = Math.max(0, 1 - (time - pulse.lastBeat) * 2);
+  pulse.decay = Math.max(0, 1 - (time - pulse.lastBeat) * 1.5);
 }
 
 // Get pulse intensity with optional Fibonacci modulation

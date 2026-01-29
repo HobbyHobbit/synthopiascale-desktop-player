@@ -167,10 +167,10 @@ export function NowPlayingBar({
         />
       </div>
 
-      <div className="flex items-center h-16 px-4 gap-4">
+      <div className="flex items-center h-20 px-6 gap-6">
         {/* Track Info (Left) */}
         <div
-          className="flex items-center gap-3 w-64 min-w-0"
+          className="flex items-center gap-3 w-72 min-w-0 flex-shrink-0"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
@@ -330,7 +330,7 @@ export function NowPlayingBar({
         </div>
 
         {/* Volume & Actions (Right) */}
-        <div className="flex items-center gap-3 w-64 justify-end">
+        <div className="flex items-center gap-3 w-72 justify-end flex-shrink-0">
           {/* Volume */}
           <div className="flex items-center gap-2 group">
             <button

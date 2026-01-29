@@ -246,12 +246,15 @@ export function LibraryPanel({
 
   const handleLibraryTrackPlay = useCallback(
     (trackId: string) => {
-      // Add track to queue at current position and play immediately
+      // Add track to queue and play immediately
       addToQueue([trackId], 'next');
-      // The track will be at index queueIndex + 1, set that as the new index
-      const currentIndex = usePlaylistStore.getState().queueIndex;
-      setQueueIndex(currentIndex + 1);
-      onPlayTrack(trackId);
+      // Use setTimeout to ensure queue state is updated before playing
+      setTimeout(() => {
+        const state = usePlaylistStore.getState();
+        const newIndex = state.queueIndex + 1;
+        setQueueIndex(newIndex);
+        onPlayTrack(trackId);
+      }, 0);
     },
     [addToQueue, setQueueIndex, onPlayTrack]
   );
