@@ -109,18 +109,18 @@ export function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button
-                    onClick={() => openExternal('https://synthopiascale.gumroad.com')}
+                    onClick={() => openExternal('https://synthopiascale.com')}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-gold/20 hover:bg-gold/30 text-gold transition-colors"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Support on Gumroad
+                    Support & Contact
                   </button>
                   <button
-                    onClick={() => openExternal('https://synthopiascale.com')}
+                    onClick={() => openExternal('https://synthopiascale.com/products')}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
                   >
                     <Music className="w-4 h-4" />
-                    Visit Label
+                    More Products
                   </button>
                 </div>
               </div>

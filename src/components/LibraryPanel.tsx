@@ -9,6 +9,7 @@ import {
   Trash2,
   Edit2,
   Download,
+  Upload,
   FolderOpen,
   Music,
   GripVertical,
@@ -52,17 +53,17 @@ export function LibraryPanel({
   } | null>(null);
   const [editingPlaylist, setEditingPlaylist] = useState<string | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const {
     library,
     playlists,
     queue,
-    queueIndex,
     createPlaylist,
     deletePlaylist,
     renamePlaylist,
     addToPlaylist,
-    removeFromPlaylist,
     addToQueue,
     removeFromQueue,
     setQueue,
@@ -70,7 +71,9 @@ export function LibraryPanel({
     getQueueTracks,
     getPlaylistTracks,
     exportPlaylistAsM3U,
+    importM3U,
     addToLibrary,
+    reorderQueue,
   } = usePlaylistStore();
 
   const queueTracks = getQueueTracks();
@@ -207,6 +210,29 @@ export function LibraryPanel({
     }
   }, [addToLibrary, addToQueue]);
 
+  const handleImportM3U = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.m3u,.m3u8';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          if (content) {
+            const playlistId = importM3U(content, file.name.replace(/\.(m3u8?|M3U8?)$/, ''));
+            if (playlistId) {
+              setView('playlists');
+            }
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  }, [importM3U]);
+
   const handleQueueTrackClick = useCallback(
     (index: number) => {
       setQueueIndex(index);
@@ -220,6 +246,38 @@ export function LibraryPanel({
 
   if (!visible) return null;
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      reorderQueue(draggedIndex, dragOverIndex);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+      reorderQueue(fromIndex, toIndex);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const renderTrackItem = (
     track: LibraryTrack,
     index: number,
@@ -228,21 +286,30 @@ export function LibraryPanel({
   ) => {
     const isCurrentTrack = track.id === currentTrackId;
     const queuePosition = isQueueView ? index : -1;
+    const isDragging = draggedIndex === index;
+    const isDragOver = dragOverIndex === index;
 
     return (
       <div
         key={`${track.id}-${index}`}
+        draggable={isQueueView}
+        onDragStart={isQueueView ? (e) => handleDragStart(e, index) : undefined}
+        onDragOver={isQueueView ? (e) => handleDragOver(e, index) : undefined}
+        onDragEnd={isQueueView ? handleDragEnd : undefined}
+        onDrop={isQueueView ? (e) => handleDrop(e, index) : undefined}
         className={`
           group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
           transition-all duration-150
           ${isCurrentTrack ? 'bg-gold/20 border border-gold/30' : 'hover:bg-white/5'}
+          ${isDragging ? 'opacity-50 scale-95' : ''}
+          ${isDragOver ? 'border-t-2 border-gold' : ''}
         `}
         onClick={() => (isQueueView ? handleQueueTrackClick(index) : onPlayTrack(track.id))}
         onContextMenu={(e) => handleContextMenu(e, track.id, playlistId)}
       >
         {/* Drag Handle (Queue only) */}
         {isQueueView && (
-          <GripVertical className="w-4 h-4 text-white/30 group-hover:text-white/50 cursor-grab" />
+          <GripVertical className="w-4 h-4 text-white/30 group-hover:text-white/50 cursor-grab active:cursor-grabbing" />
         )}
 
         {/* Track Number / Playing Indicator */}
@@ -477,13 +544,22 @@ export function LibraryPanel({
           {/* Playlists View */}
           {view === 'playlists' && (
             <div className="p-2">
-              <button
-                onClick={handleCreatePlaylist}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-dashed border-white/20 hover:border-gold/50 hover:bg-white/5 transition-colors mb-2"
-              >
-                <Plus className="w-5 h-5 text-white/60" />
-                <span className="text-sm text-white/60">Create Playlist</span>
-              </button>
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={handleCreatePlaylist}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-lg border border-dashed border-white/20 hover:border-gold/50 hover:bg-white/5 transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-white/60" />
+                  <span className="text-sm text-white/60">New Playlist</span>
+                </button>
+                <button
+                  onClick={handleImportM3U}
+                  className="flex items-center justify-center gap-2 px-3 py-3 rounded-lg border border-dashed border-white/20 hover:border-gold/50 hover:bg-white/5 transition-colors"
+                  title="Import M3U Playlist"
+                >
+                  <Upload className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
               <div className="space-y-1">
                 {playlists.map((playlist) => renderPlaylistItem(playlist))}
               </div>

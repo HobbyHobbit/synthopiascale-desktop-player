@@ -6,6 +6,12 @@ export interface DesktopSource {
   thumbnail: string;
 }
 
+export interface AudioFileInfo {
+  path: string;
+  name: string;
+  duration?: number;
+}
+
 export interface ElectronAPI {
   getDisplays: () => Promise<Array<{
     id: number;
@@ -25,6 +31,8 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   installUpdate: () => Promise<void>;
   getDesktopSources: () => Promise<DesktopSource[]>;
+  openFiles: () => Promise<AudioFileInfo[] | null>;
+  openFolder: () => Promise<AudioFileInfo[] | null>;
   onToggleTransparentMode: (callback: () => void) => void;
   onOpenSettings: (callback: () => void) => void;
   onUpdateAvailable: (callback: () => void) => void;
@@ -44,6 +52,8 @@ const electronAPI: ElectronAPI = {
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
+  openFiles: () => ipcRenderer.invoke('open-files'),
+  openFolder: () => ipcRenderer.invoke('open-folder'),
   onToggleTransparentMode: (callback: () => void) => {
     ipcRenderer.on('toggle-transparent-mode', callback);
   },

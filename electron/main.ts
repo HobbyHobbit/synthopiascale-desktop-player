@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, shell, desktopCapturer } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, shell, desktopCapturer, dialog } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
@@ -246,6 +247,73 @@ ipcMain.handle('get-desktop-sources', async () => {
     name: source.name,
     thumbnail: source.thumbnail.toDataURL(),
   }));
+});
+
+// Audio file extensions
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac', 'wma', 'aiff'];
+
+ipcMain.handle('open-files', async () => {
+  if (!mainWindow) return null;
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Audio Files',
+    filters: [
+      { name: 'Audio Files', extensions: AUDIO_EXTENSIONS },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile', 'multiSelections'],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths.map((filePath) => ({
+    path: filePath,
+    name: path.basename(filePath),
+  }));
+});
+
+ipcMain.handle('open-folder', async () => {
+  if (!mainWindow) return null;
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Folder with Audio Files',
+    properties: ['openDirectory'],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  const folderPath = result.filePaths[0];
+  const files: Array<{ path: string; name: string }> = [];
+
+  // Recursively scan folder for audio files
+  function scanFolder(dir: string) {
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scanFolder(fullPath);
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase().slice(1);
+          if (AUDIO_EXTENSIONS.includes(ext)) {
+            files.push({
+              path: fullPath,
+              name: entry.name,
+            });
+          }
+        }
+      }
+    } catch {
+      // Skip inaccessible directories
+    }
+  }
+
+  scanFolder(folderPath);
+  return files.length > 0 ? files : null;
 });
 
 // App lifecycle

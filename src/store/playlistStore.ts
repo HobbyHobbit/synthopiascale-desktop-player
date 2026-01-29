@@ -91,8 +91,9 @@ interface PlaylistState {
   getPlaylistTracks: (playlistId: string) => LibraryTrack[];
   getQueueTracks: () => LibraryTrack[];
   
-  // Export
+  // Export/Import
   exportPlaylistAsM3U: (playlistId: string) => string;
+  importM3U: (m3uContent: string, playlistName?: string) => string | null;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -381,7 +382,7 @@ export const usePlaylistStore = create<PlaylistState>()(
           .filter((t): t is LibraryTrack => t !== undefined);
       },
 
-      // Export
+      // Export/Import
       exportPlaylistAsM3U: (playlistId) => {
         const state = get();
         const playlist = state.playlists.find((p) => p.id === playlistId);
@@ -396,6 +397,85 @@ export const usePlaylistStore = create<PlaylistState>()(
           }
         });
         return m3u;
+      },
+
+      importM3U: (m3uContent, playlistName) => {
+        const lines = m3uContent.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length === 0) return null;
+
+        const trackIds: string[] = [];
+        let currentTitle = '';
+        let currentArtist = 'Unknown Artist';
+        let currentDuration = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          
+          if (line.startsWith('#EXTM3U')) continue;
+          
+          if (line.startsWith('#EXTINF:')) {
+            // Parse: #EXTINF:duration,Artist - Title
+            const match = line.match(/#EXTINF:(-?\d+),(.+)/);
+            if (match) {
+              currentDuration = Math.max(0, parseInt(match[1], 10));
+              const info = match[2];
+              const dashIndex = info.indexOf(' - ');
+              if (dashIndex > 0) {
+                currentArtist = info.substring(0, dashIndex).trim();
+                currentTitle = info.substring(dashIndex + 3).trim();
+              } else {
+                currentTitle = info.trim();
+                currentArtist = 'Unknown Artist';
+              }
+            }
+          } else if (!line.startsWith('#')) {
+            // This is a file path
+            const src = line;
+            const title = currentTitle || src.split(/[/\\]/).pop()?.replace(/\.[^/.]+$/, '') || 'Unknown';
+            
+            const id = generateId();
+            set((state) => ({
+              library: {
+                ...state.library,
+                [id]: {
+                  id,
+                  title,
+                  artist: currentArtist,
+                  src,
+                  duration: currentDuration,
+                  source: 'local' as const,
+                  addedAt: Date.now(),
+                },
+              },
+            }));
+            trackIds.push(id);
+            
+            // Reset for next track
+            currentTitle = '';
+            currentArtist = 'Unknown Artist';
+            currentDuration = 0;
+          }
+        }
+
+        if (trackIds.length === 0) return null;
+
+        // Create playlist with imported tracks
+        const name = playlistName || `Imported ${new Date().toLocaleDateString()}`;
+        const playlistId = generateId();
+        set((state) => ({
+          playlists: [
+            ...state.playlists,
+            {
+              id: playlistId,
+              name,
+              tracks: trackIds,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+          ],
+        }));
+
+        return playlistId;
       },
     }),
     {
