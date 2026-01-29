@@ -77,48 +77,28 @@ function initializeApp(): void {
 // Register custom protocol for local audio files
 // This allows serving local files in dev mode where file:// is blocked
 function registerLocalAudioProtocol(): void {
-  protocol.handle('local-audio', async (request) => {
+  // Register the protocol scheme as privileged (must be done before app ready)
+  protocol.registerFileProtocol('local-audio', (request, callback) => {
     // Extract file path from URL
-    // URL format: local-audio://C:/path/to/file.mp3 or local-audio:///C:/path/to/file.mp3
+    // URL format: local-audio://C:/path/to/file.mp3
     let filePath = decodeURIComponent(request.url.replace('local-audio://', ''));
     
     // Remove leading slashes for Windows paths
-    if (process.platform === 'win32' && filePath.startsWith('/')) {
+    while (filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
     
     // Normalize path separators for the file system
     const normalizedPath = filePath.replace(/\//g, path.sep);
     
-    try {
-      if (fs.existsSync(normalizedPath)) {
-        // Read file directly and return as Response with proper MIME type
-        const data = fs.readFileSync(normalizedPath);
-        const ext = path.extname(normalizedPath).toLowerCase();
-        const mimeTypes: Record<string, string> = {
-          '.mp3': 'audio/mpeg',
-          '.wav': 'audio/wav',
-          '.ogg': 'audio/ogg',
-          '.flac': 'audio/flac',
-          '.m4a': 'audio/mp4',
-          '.aac': 'audio/aac',
-          '.wma': 'audio/x-ms-wma',
-          '.opus': 'audio/opus',
-          '.webm': 'audio/webm',
-        };
-        const contentType = mimeTypes[ext] || 'audio/mpeg';
-        return new Response(data, {
-          status: 200,
-          headers: { 'Content-Type': contentType },
-        });
-      } else {
-        console.error('File not found:', normalizedPath);
-      }
-    } catch (error) {
-      console.error('Error loading local audio file:', normalizedPath, error);
-    }
+    console.log('local-audio protocol request:', request.url, '-> file:', normalizedPath);
     
-    return new Response('File not found', { status: 404 });
+    if (fs.existsSync(normalizedPath)) {
+      callback({ path: normalizedPath });
+    } else {
+      console.error('File not found:', normalizedPath);
+      callback({ error: -6 }); // NET_ERROR_FILE_NOT_FOUND
+    }
   });
 }
 
