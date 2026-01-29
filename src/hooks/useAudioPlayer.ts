@@ -52,6 +52,8 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const lastLoadedTrackIdRef = useRef<string | null>(null);
+  const isPlayingRef = useRef(false);
 
   // Get state from playlist store
   const {
@@ -163,18 +165,32 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     };
   }, []);
 
-  // Load track when index changes
+  // Keep ref in sync with state
   useEffect(() => {
-    if (audioRef.current && currentTrack) {
-      const wasPlaying = isPlaying;
-      audioRef.current.src = currentTrack.src;
-      audioRef.current.load();
-      
-      if (wasPlaying) {
-        audioRef.current.play().catch(console.error);
-      }
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  // Load track when track ID changes (not on every render)
+  useEffect(() => {
+    if (!audioRef.current || !currentTrack) return;
+    
+    // Only load if track actually changed
+    if (lastLoadedTrackIdRef.current === currentTrack.id) return;
+    lastLoadedTrackIdRef.current = currentTrack.id;
+    
+    const wasPlaying = isPlayingRef.current;
+    audioRef.current.src = currentTrack.src;
+    audioRef.current.load();
+    
+    if (wasPlaying) {
+      audioRef.current.play().catch((err) => {
+        // Only log if not AbortError (which is expected when rapidly switching)
+        if (err.name !== 'AbortError') {
+          console.error('Playback error:', err);
+        }
+      });
     }
-  }, [currentTrackIndex, currentTrack]);
+  }, [currentTrack?.id]);
 
   // Setup Web Audio API for visualization
   const setupAudioContext = useCallback(() => {
