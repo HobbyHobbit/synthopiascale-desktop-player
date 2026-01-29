@@ -104,8 +104,9 @@ export function registerIpcHandlers(): void {
       return null;
     }
 
+    // Convert paths to use local-audio:// protocol for dev mode compatibility
     return result.filePaths.map((filePath) => ({
-      path: filePath,
+      path: `local-audio://${filePath.replace(/\\/g, '/')}`,
       name: path.basename(filePath),
     }));
   });
@@ -150,7 +151,14 @@ export function registerIpcHandlers(): void {
     }
 
     scanFolder(folderPath);
-    return files.length > 0 ? files : null;
+    
+    // Convert paths to use local-audio:// protocol for dev mode compatibility
+    const filesWithProtocol = files.map(file => ({
+      ...file,
+      path: `local-audio://${file.path.replace(/\\/g, '/')}`,
+    }));
+    
+    return filesWithProtocol.length > 0 ? filesWithProtocol : null;
   });
 }
 
@@ -171,8 +179,9 @@ export function getAudioFilesFromArgs(args: string[]): string[] {
 export function sendFilesToRenderer(files: string[]): void {
   const mainWindow = getMainWindow();
   if (files.length > 0 && mainWindow) {
+    // Convert paths to use local-audio:// protocol for dev mode compatibility
     const audioFiles = files.map((filePath) => ({
-      path: filePath,
+      path: `local-audio://${filePath.replace(/\\/g, '/')}`,
       name: path.basename(filePath),
     }));
     mainWindow.webContents.send('open-files-from-system', audioFiles);
