@@ -75,6 +75,10 @@
       {
         "from": "assets",
         "to": "assets"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
       }
     ],
     "win": {

@@ -142,7 +142,11 @@ const PENTAGON_SIDE_LENGTHS: [number, number, number, number, number] = [1.0, 1.
 
 const ROTATION_SPEED = 0.15;
 
-function FrontGlassFrame() {
+export interface MetalFrameProps {
+  quality?: 'low' | 'high';
+}
+
+function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'high' }) {
   const geometry = useMemo(
     () =>
       createRectFrameGeometry(
@@ -161,9 +165,10 @@ function FrontGlassFrame() {
   );
 }
 
-function MiddleGoldPentagon() {
+function MiddleGoldPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) {
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION + 0.26;
+  const frameCountRef = useRef(0);
 
   const geometry = useMemo(
     () =>
@@ -179,6 +184,10 @@ function MiddleGoldPentagon() {
 
   useFrame((state) => {
     if (!meshRef.current) return;
+    // Skip frames in low quality
+    frameCountRef.current++;
+    if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
+    
     const t = state.clock.elapsedTime;
     meshRef.current.rotation.z = baseRotation - t * ROTATION_SPEED;
   });
@@ -190,9 +199,10 @@ function MiddleGoldPentagon() {
   );
 }
 
-function BackSilverPentagon() {
+function BackSilverPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) {
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION - 0.26;
+  const frameCountRef = useRef(0);
 
   const geometry = useMemo(
     () =>
@@ -208,6 +218,10 @@ function BackSilverPentagon() {
 
   useFrame((state) => {
     if (!meshRef.current) return;
+    // Skip frames in low quality
+    frameCountRef.current++;
+    if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
+    
     const t = state.clock.elapsedTime;
     meshRef.current.rotation.z = baseRotation + t * ROTATION_SPEED;
   });
@@ -219,12 +233,12 @@ function BackSilverPentagon() {
   );
 }
 
-export function MetalFrame() {
+export function MetalFrame({ quality = 'high' }: MetalFrameProps) {
   return (
     <group>
-      <BackSilverPentagon />
-      <MiddleGoldPentagon />
-      <FrontGlassFrame />
+      <BackSilverPentagon quality={quality} />
+      <MiddleGoldPentagon quality={quality} />
+      <FrontGlassFrame quality={quality} />
     </group>
   );
 }

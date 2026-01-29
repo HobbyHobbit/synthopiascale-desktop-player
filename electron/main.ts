@@ -45,8 +45,17 @@ function saveWindowState(): void {
   store.set('windowState', state);
 }
 
+function getIconPath(): string {
+  if (isDev) {
+    return path.join(__dirname, '../../build/icon.ico');
+  }
+  // In packaged app, icon is in resources
+  return path.join(process.resourcesPath, 'icon.ico');
+}
+
 function createWindow(): void {
   const windowState = getWindowState();
+  const iconPath = getIconPath();
 
   mainWindow = new BrowserWindow({
     width: windowState.width,
@@ -63,7 +72,7 @@ function createWindow(): void {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
-    icon: path.join(__dirname, '../../build/icon.ico'),
+    icon: iconPath,
     title: 'SynthopiaScale Desktop Visualizer',
     show: false,
   });
@@ -106,9 +115,7 @@ function createWindow(): void {
 }
 
 function createTray(): void {
-  const iconPath = isDev
-    ? path.join(__dirname, '../../build/icon.ico')
-    : path.join(process.resourcesPath, 'assets/icon.ico');
+  const iconPath = getIconPath();
 
   let icon: Electron.NativeImage;
   try {

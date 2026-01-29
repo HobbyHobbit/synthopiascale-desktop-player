@@ -25,6 +25,7 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
   const animationFrameRef = useRef<number | null>(null);
   const timeRef = useRef(0);
+  const lastFrameTimeRef = useRef(0);
 
   const colors = [
     'rgba(220, 225, 235, 0.6)',
@@ -59,7 +60,8 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
 
   const initParticles = useCallback(
     (canvas: HTMLCanvasElement) => {
-      const particleCount = 28;
+      // Reduced particle count for better performance
+      const particleCount = 16;
       particlesRef.current = Array.from({ length: particleCount }, () =>
         createParticle(canvas)
       );
@@ -95,7 +97,15 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseleave', handleMouseLeave);
 
-    const animate = () => {
+    const animate = (currentTime: number) => {
+      // Throttle to ~30fps for better performance
+      const elapsed = currentTime - lastFrameTimeRef.current;
+      if (elapsed < 33) { // ~30fps
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      lastFrameTimeRef.current = currentTime;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Gentle time progression (no BPM coupling)
@@ -171,7 +181,7 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('resize', handleResize);

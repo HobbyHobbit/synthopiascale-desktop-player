@@ -310,8 +310,8 @@ function App() {
         </div>
       )}
 
-      {/* Prominent Play Controls - visible when GlassCard is hidden */}
-      {(!settings.showGlassCard || studioMode) && !transparentMode && (
+      {/* Prominent Play Controls - ONLY visible in studio mode (NowPlayingBar has controls otherwise) */}
+      {studioMode && !transparentMode && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
           {/* Previous */}
           <button
@@ -379,8 +379,8 @@ function App() {
         onAudioModeChange={setAudioMode}
       />
 
-      {/* Now Playing Bar - shown in studio mode or when glass card is hidden */}
-      {(studioMode || !settings.showGlassCard) && !transparentMode && (
+      {/* Now Playing Bar - shown when glass card is hidden (NOT in studio mode to avoid redundancy) */}
+      {!settings.showGlassCard && !studioMode && !transparentMode && (
         <NowPlayingBar
           isPlaying={isPlaying}
           currentTime={currentTime}

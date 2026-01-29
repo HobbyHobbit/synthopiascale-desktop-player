@@ -18,11 +18,13 @@ const STEP_DEPTH = 0.105;
 export interface StaircaseProps {
   speed?: number;
   bassIntensity?: number;
+  quality?: 'low' | 'high';
 }
 
-export function Staircase({ speed = 0.3, bassIntensity = 0 }: StaircaseProps) {
+export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high' }: StaircaseProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
+  const frameCountRef = useRef(0);
 
   const localRightX = INNER_WIDTH / 2 - STEP_WIDTH / 2;
   const localBottomY = -INNER_HEIGHT / 2;
@@ -44,6 +46,10 @@ export function Staircase({ speed = 0.3, bassIntensity = 0 }: StaircaseProps) {
 
   useFrame((state) => {
     if (!meshRef.current) return;
+    
+    // Skip frames in low quality for better performance
+    frameCountRef.current++;
+    if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
 
     const time = state.clock.elapsedTime;
     const animOffset = 1 - ((time * speed) % 1);
