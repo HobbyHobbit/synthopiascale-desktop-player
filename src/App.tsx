@@ -7,13 +7,14 @@ import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { LibraryPanel } from './components/LibraryPanel';
 import { NowPlayingBar } from './components/NowPlayingBar';
+import { HelpOverlay } from './components/HelpOverlay';
 import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useBPMDetector } from './hooks/useBPMDetector';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
 import { defaultTracks } from './data/tracks';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -46,6 +47,7 @@ declare global {
 function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
   const [studioMode, setStudioMode] = useState(false); // Full visualizer mode
@@ -169,6 +171,8 @@ function App() {
     onToggleFullscreen: toggleFullscreen,
     onSeekForward: handleSeekForward,
     onSeekBackward: handleSeekBackward,
+    onToggleHelp: () => setShowHelp(prev => !prev),
+    onToggleStudioMode: () => setStudioMode(prev => !prev),
   });
 
   // Media session for system media controls
@@ -235,45 +239,54 @@ function App() {
         />
       )}
 
-      {/* Top Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-        <button
-          onClick={() => setShowLibrary(prev => !prev)}
-          className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showLibrary ? 'bg-gold/20' : ''}`}
-          title="Library (Ctrl+L)"
-        >
-          <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
-        </button>
-        <button
-          onClick={toggleUIVisibility}
-          className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-          title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
-        >
-          {settings.showGlassCard ? (
-            <EyeOff className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-          ) : (
-            <Eye className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-          )}
-        </button>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-          title="Settings (Ctrl+,)"
-        >
-          <SettingsIcon className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-        </button>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-          title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-          ) : (
-            <Maximize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-          )}
-        </button>
-      </div>
+      {/* Top Controls - hidden in studio mode */}
+      {!studioMode && (
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
+            title="Help & Info (F1)"
+          >
+            <HelpCircle className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+          </button>
+          <button
+            onClick={() => setShowLibrary(prev => !prev)}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showLibrary ? 'bg-gold/20' : ''}`}
+            title="Library (Ctrl+L)"
+          >
+            <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <button
+            onClick={toggleUIVisibility}
+            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
+            title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
+          >
+            {settings.showGlassCard ? (
+              <EyeOff className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+            ) : (
+              <Eye className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+            )}
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
+            title="Settings (Ctrl+,)"
+          >
+            <SettingsIcon className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
+            title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+            ) : (
+              <Maximize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Branding (when glass card is hidden) */}
       {!settings.showGlassCard && (
@@ -288,6 +301,20 @@ function App() {
       {/* Settings Panel */}
       {showSettings && (
         <SettingsPanel onClose={() => setShowSettings(false)} />
+      )}
+
+      {/* Help Overlay */}
+      <HelpOverlay visible={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* Studio Mode Indicator - minimal branding */}
+      {studioMode && !transparentMode && (
+        <div className="absolute top-4 left-4 z-40 opacity-50 hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-2 text-sm text-white/70">
+            <span className="text-gold">●</span>
+            <span>Studio Mode</span>
+            <span className="text-white/40 text-xs">(S to exit)</span>
+          </div>
+        </div>
       )}
 
       {/* Library Panel */}

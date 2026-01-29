@@ -12,6 +12,8 @@ interface KeyboardShortcutsConfig {
   onToggleFullscreen: () => void;
   onSeekForward: () => void;
   onSeekBackward: () => void;
+  onToggleHelp: () => void;
+  onToggleStudioMode?: () => void;
 }
 
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
@@ -27,6 +29,8 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
     onToggleFullscreen,
     onSeekForward,
     onSeekBackward,
+    onToggleHelp,
+    onToggleStudioMode,
   } = config;
 
   const handleKeyDown = useCallback(
@@ -138,6 +142,20 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         onPrevious();
         return;
       }
+
+      // F1 - Help
+      if (key === 'F1') {
+        e.preventDefault();
+        onToggleHelp();
+        return;
+      }
+
+      // S - Studio Mode (minimal UI)
+      if (key.toLowerCase() === 's' && !ctrlKey && !altKey && !shiftKey) {
+        e.preventDefault();
+        onToggleStudioMode?.();
+        return;
+      }
     },
     [
       onPlayPause,
@@ -151,6 +169,8 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
       onToggleFullscreen,
       onSeekForward,
       onSeekBackward,
+      onToggleHelp,
+      onToggleStudioMode,
     ]
   );
 
