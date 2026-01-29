@@ -170,6 +170,8 @@ export function WaterVisualizer3D({
 
     for (let i = 0; i < MAX_BUBBLES; i++) {
       const b = bubbles[i];
+      if (!b) continue; // Guard against uninitialized bubbles
+      
       const shouldBeActive = i < activeBubbleCount;
       
       b.life += delta;

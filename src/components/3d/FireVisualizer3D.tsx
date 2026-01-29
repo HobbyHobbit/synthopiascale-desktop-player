@@ -131,6 +131,8 @@ export function FireVisualizer3D({
 
     for (let i = 0; i < MAX_PARTICLES; i++) {
       const p = particles[i];
+      if (!p) continue; // Guard against uninitialized particles
+      
       const shouldBeActive = i < activeParticleCount;
       
       p.life += delta;

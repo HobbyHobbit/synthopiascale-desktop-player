@@ -253,6 +253,12 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
 
   const play = useCallback(() => {
     if (!audioRef.current) return;
+    
+    // Don't try to play if no valid source is set
+    const src = audioRef.current.src;
+    if (!src || src === window.location.href || src === window.location.origin + '/' || src.endsWith(':5173/')) {
+      return;
+    }
 
     // Setup audio context on first play (requires user interaction)
     if (!audioContextRef.current) {
@@ -267,7 +273,10 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     audioRef.current.play().then(() => {
       setIsPlaying(true);
     }).catch(error => {
-      console.error('Failed to play:', error);
+      // Only log real errors, not expected ones
+      if (error.name !== 'AbortError' && error.name !== 'NotSupportedError') {
+        console.error('Failed to play:', error);
+      }
     });
   }, [setupAudioContext]);
 
