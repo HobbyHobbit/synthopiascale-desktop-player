@@ -466,13 +466,13 @@ export function LibraryPanel({
       {/* Panel */}
       <div
         className={`
-          fixed left-0 top-0 w-80 z-40
-          bg-black/80 backdrop-blur-xl border-r border-white/10
+          fixed left-0 top-0 w-80 z-50
+          bg-black/90 backdrop-blur-xl border-r border-white/10
           flex flex-col
           transform transition-all duration-300
           ${visible ? 'translate-x-0' : '-translate-x-full'}
         `}
-        style={{ bottom: showFooterPlayer ? '80px' : '0' }}
+        style={{ bottom: showFooterPlayer ? '7rem' : '0' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
