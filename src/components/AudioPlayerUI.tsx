@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePlaylistStore } from '../store/playlistStore';
 import { 
   Play, 
   Pause, 
@@ -86,8 +87,8 @@ export function AudioPlayerUI({
   muted = false,
   onToggleMute,
 }: AudioPlayerUIProps) {
-  const [shuffleEnabled, setShuffleEnabled] = useState(false);
-  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  // Use global store for shuffle and repeat
+  const { shuffleEnabled, toggleShuffle, repeatMode, setRepeatMode } = usePlaylistStore();
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [frequencyBars, setFrequencyBars] = useState<number[]>(new Array(64).fill(0));
   const animationRef = useRef<number | null>(null);
@@ -180,7 +181,7 @@ export function AudioPlayerUI({
       {/* Playback Controls */}
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => setShuffleEnabled(!shuffleEnabled)}
+          onClick={toggleShuffle}
           className={`p-2 rounded-full transition-all ${
             shuffleEnabled 
               ? 'text-primary-solid bg-primary-solid/20' 
@@ -304,13 +305,13 @@ export function AudioPlayerUI({
       {/* Secondary controls */}
       <div className="flex items-center gap-4 mt-4">
         <button
-          onClick={() => setRepeatEnabled(!repeatEnabled)}
+          onClick={() => setRepeatMode(repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off')}
           className={`p-2 rounded-full transition-all ${
-            repeatEnabled 
+            repeatMode !== 'off' 
               ? 'text-primary-solid bg-primary-solid/20' 
               : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
           }`}
-          title="Repeat"
+          title={`Repeat: ${repeatMode}`}
         >
           <Repeat className="w-4 h-4" />
         </button>
