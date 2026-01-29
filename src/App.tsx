@@ -68,6 +68,7 @@ function App() {
     prevTrack,
     seek,
     setVolume,
+    setPlaybackRate,
     playTrackById,
     queueLength,
     audioMode,
@@ -239,7 +240,7 @@ function App() {
       style={{ background: transparentMode ? 'transparent' : undefined }}
     >
       {/* Background Particles (static visual, not synced to playback) */}
-      <ParticleBackground enabled={settings.particlesEnabled && !transparentMode} />
+      <ParticleBackground enabled={settings.particlesEnabled && !transparentMode} primaryColor={settings.primaryColor} />
 
       {/* Main Visualizer with Error Boundary */}
       <ErrorBoundary>
@@ -264,12 +265,14 @@ function App() {
           trackInfo={trackInfo}
           analyser={analyser}
           onSeek={seek}
+          onPlaybackRateChange={setPlaybackRate}
           visible={settings.showControls}
           showBranding={settings.showBranding}
           showEQBars={settings.showEQBars}
           showTimeline={settings.showTimeline}
           showTrackInfo={settings.showTrackInfo}
           onToggleFullscreen={toggleFullscreen}
+          primaryColor={settings.primaryColor}
         />
       </GlassCard>
 
@@ -410,6 +413,7 @@ function App() {
           onVolumeChange={handleVolumeChange}
           onOpenLibrary={() => setShowLibrary(true)}
           onToggleFullVisualizer={toggleFullscreen}
+          primaryColor={settings.primaryColor}
         />
       )}
     </div>

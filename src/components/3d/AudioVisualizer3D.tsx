@@ -15,6 +15,15 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 212, g: 175, b: 55 }; // Default gold
+}
+
 function rgbToHex(r: number, g: number, b: number): string {
   const toHex = (c: number) =>
     Math.max(0, Math.min(255, Math.round(c)))
@@ -23,24 +32,22 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-function getPlasmaColor(intensity: number, seed: number): string {
+function getPlasmaColor(intensity: number, seed: number, primaryColor: string): string {
+  const base = hexToRgb(primaryColor);
   const randomFactor = 0.9 + seededRandom(seed) * 0.2;
   const effectiveIntensity = Math.min(1, intensity * randomFactor);
 
-  const blueStrength = effectiveIntensity;
+  // Blend from white to primaryColor based on intensity
+  const whiteBlend = 1 - effectiveIntensity * 0.7;
+  let r = Math.round(base.r + (255 - base.r) * whiteBlend);
+  let g = Math.round(base.g + (255 - base.g) * whiteBlend);
+  let b = Math.round(base.b + (255 - base.b) * whiteBlend);
 
-  let r = 255;
-  let g = 255;
-  const b = 255;
-
-  r = Math.round(255 - blueStrength * 80);
-  g = Math.round(255 - blueStrength * 40);
-
-  if (effectiveIntensity > 0.5) {
-    const redBoost = (effectiveIntensity - 0.5) * 2;
-    const redValue = Math.round(180 + redBoost * 75);
-    r = Math.min(255, Math.max(r, redValue));
-    g = Math.round(g * (1 - redBoost * 0.4));
+  // Add glow effect at high intensity
+  if (effectiveIntensity > 0.6) {
+    const boost = (effectiveIntensity - 0.6) * 2.5;
+    r = Math.min(255, r + Math.round(boost * 30));
+    g = Math.min(255, g + Math.round(boost * 20));
   }
 
   return rgbToHex(r, g, b);
@@ -107,14 +114,15 @@ export function AudioVisualizer3D({
   analyser,
   isPlaying,
   intensity: globalIntensity,
+  primaryColor,
 }: AudioVisualizer3DProps) {
   const groupRef = useRef<Group>(null);
   const timeRef = useRef(0);
   const frequencyDataRef = useRef<number[]>([]);
   const [renderKey, setRenderKey] = useState(0);
 
-  // Intensity controls visible bolt count (0-72), not length
-  // Minimum 8 bolts even at 0% intensity for visual continuity
+  // Intensity controls visible bolt count
+  // Slider range: 1.0 (100%) = 72 bolts, 5.0 (500%) = 360 bolts
   const baseTendrilCount = 72;
   const visibleTendrilCount = Math.max(8, Math.floor(baseTendrilCount * globalIntensity));
   const innerRadius = 0.115;
@@ -185,10 +193,10 @@ export function AudioVisualizer3D({
 
         // Length always at max (maxOuterRadius), intensity only affects color/animation
         const length = innerRadius + intensity * (maxOuterRadius - innerRadius);
-        const color = getPlasmaColor(intensity, t.colorIndex * 137);
+        const color = getPlasmaColor(intensity, t.colorIndex * 137, primaryColor);
         const points = generatePlasmaLightning(t.angle, length, intensity, timeRef.current, t.colorIndex * 137);
 
-        return <Line key={i} points={points} color={color} lineWidth={0.4 + intensity * 0.3} />;
+        return <Line key={i} points={points} color={color} lineWidth={0.3 + intensity * 0.225} />;
       })}
     </group>
   );

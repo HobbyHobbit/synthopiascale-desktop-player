@@ -32,6 +32,7 @@ interface UseAudioPlayerReturn extends AudioPlayerState {
   playTrackById: (trackId: string) => void;
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
   setAudioMode: (mode: 'internal' | 'system') => void;
   audioElement: HTMLAudioElement | null;
   queueLength: number;
@@ -320,6 +321,12 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     }
   }, []);
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+    }
+  }, []);
+
   // Sync volume on mount
   useEffect(() => {
     if (audioRef.current) {
@@ -354,6 +361,7 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     playTrackById,
     seek,
     setVolume,
+    setPlaybackRate,
     setAudioMode,
     audioElement: audioRef.current,
     queueLength,

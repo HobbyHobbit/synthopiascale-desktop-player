@@ -28,12 +28,35 @@ interface AudioPlayerUIProps {
   trackInfo: TrackInfo;
   analyser: AnalyserNode | null;
   onSeek?: (time: number) => void;
+  onPlaybackRateChange?: (rate: number) => void;
   visible: boolean;
   showBranding?: boolean;
   showEQBars?: boolean;
   showTimeline?: boolean;
   showTrackInfo?: boolean;
   onToggleFullscreen?: () => void;
+  primaryColor?: string;
+}
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return { h: 45, s: 80, l: 50 };
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
 function formatTime(seconds: number): string {
@@ -50,8 +73,10 @@ export function AudioPlayerUI({
   trackInfo,
   analyser,
   onSeek,
+  onPlaybackRateChange,
   visible,
   showBranding = true,
+  primaryColor = '#d4af37',
   showEQBars = true,
   showTimeline = true,
   showTrackInfo = true,
@@ -70,7 +95,9 @@ export function AudioPlayerUI({
   const cycleSpeed = () => {
     const currentIndex = speeds.indexOf(playbackSpeed);
     const nextIndex = (currentIndex + 1) % speeds.length;
-    setPlaybackSpeed(speeds[nextIndex]);
+    const newSpeed = speeds[nextIndex];
+    setPlaybackSpeed(newSpeed);
+    onPlaybackRateChange?.(newSpeed);
   };
 
   // Frequency visualization
@@ -221,10 +248,12 @@ export function AudioPlayerUI({
       {showEQBars && (
         <div className="w-full max-w-lg h-12 flex items-end justify-center gap-[2px] mb-3">
           {frequencyBars.map((value, index) => {
-            // Color gradient from purple to gold based on frequency
-            const hue = 280 - (index / frequencyBars.length) * 230; // Purple to gold
-            const saturation = 70 + value * 30;
-            const lightness = 50 + value * 20;
+            // Color gradient based on primaryColor
+            const baseHsl = hexToHsl(primaryColor);
+            const hueOffset = (index / frequencyBars.length) * 60 - 30; // Spread around base hue
+            const hue = (baseHsl.h + hueOffset + 360) % 360;
+            const saturation = baseHsl.s + value * 20;
+            const lightness = baseHsl.l + value * 15;
             
             return (
               <div
@@ -251,8 +280,8 @@ export function AudioPlayerUI({
           >
             {/* Progress fill */}
             <div
-              className="absolute h-full bg-gradient-to-r from-purple-500 via-pink-500 to-primary-solid rounded-full transition-all"
-              style={{ width: `${progress}%` }}
+              className="absolute h-full rounded-full transition-all"
+              style={{ width: `${progress}%`, backgroundColor: primaryColor }}
             />
             
             {/* Hover effect */}

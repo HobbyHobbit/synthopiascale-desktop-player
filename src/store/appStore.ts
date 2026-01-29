@@ -45,7 +45,7 @@ interface AppState {
 
 const defaultSettings: Settings = {
   audioSource: 'system',
-  intensity: 1.0,
+  intensity: 1.0, // 100% = 72 bolts, max 500% = 360 bolts
   primaryColor: '#d4af37',
   quality: 'high',
   particlesEnabled: true,

@@ -91,9 +91,9 @@ export const Scene = memo(function Scene({
           />
         )}
         {/* Metal frames */}
-        <MetalFrame quality={quality} />
+        <MetalFrame quality={quality} primaryColor={primaryColor} />
         {/* Stairs on top */}
-        <Staircase quality={quality} />
+        <Staircase quality={quality} primaryColor={primaryColor} />
       </group>
 
       {/* Post-processing only in high quality */}

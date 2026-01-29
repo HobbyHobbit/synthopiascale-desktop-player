@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface Particle {
   x: number;
@@ -17,9 +17,16 @@ interface Particle {
 
 interface ParticleBackgroundProps {
   enabled?: boolean;
+  primaryColor?: string;
 }
 
-export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) {
+function hexToRgba(hex: string, alpha: number): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return `rgba(212, 175, 55, ${alpha})`;
+  return `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${alpha})`;
+}
+
+export function ParticleBackground({ enabled = true, primaryColor = '#d4af37' }: ParticleBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
@@ -27,14 +34,14 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
   const timeRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
 
-  const colors = [
+  const colors = useMemo(() => [
     'rgba(220, 225, 235, 0.6)',
     'rgba(200, 210, 225, 0.55)',
     'rgba(240, 245, 250, 0.5)',
     'rgba(255, 255, 255, 0.45)',
-    'rgba(212, 175, 55, 0.35)',
-    'rgba(212, 175, 55, 0.25)',
-  ];
+    hexToRgba(primaryColor, 0.35),
+    hexToRgba(primaryColor, 0.25),
+  ], [primaryColor]);
 
   const createParticle = useCallback(
     (canvas: HTMLCanvasElement): Particle => {
@@ -122,10 +129,10 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
           particle.y,
           glowSize
         );
-        gradient.addColorStop(0, `rgba(212, 175, 55, ${particle.opacity * 0.12})`);
-        gradient.addColorStop(0.3, `rgba(212, 175, 55, ${particle.opacity * 0.06})`);
-        gradient.addColorStop(0.6, `rgba(255, 220, 120, ${particle.opacity * 0.03})`);
-        gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        gradient.addColorStop(0, hexToRgba(primaryColor, particle.opacity * 0.12));
+        gradient.addColorStop(0.3, hexToRgba(primaryColor, particle.opacity * 0.06));
+        gradient.addColorStop(0.6, hexToRgba(primaryColor, particle.opacity * 0.03));
+        gradient.addColorStop(1, hexToRgba(primaryColor, 0));
 
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
@@ -173,7 +180,7 @@ export function ParticleBackground({ enabled = true }: ParticleBackgroundProps) 
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
         ctx.shadowBlur = particle.size * 3;
-        ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+        ctx.shadowColor = hexToRgba(primaryColor, 0.8);
         ctx.fill();
         ctx.restore();
       });

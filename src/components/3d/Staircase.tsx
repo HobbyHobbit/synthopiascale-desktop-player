@@ -19,9 +19,10 @@ export interface StaircaseProps {
   speed?: number;
   bassIntensity?: number;
   quality?: 'low' | 'high';
+  primaryColor?: string;
 }
 
-export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high' }: StaircaseProps) {
+export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high', primaryColor = '#d4af37' }: StaircaseProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
   const frameCountRef = useRef(0);
@@ -75,19 +76,19 @@ export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high' }: 
   const material = useMemo(
     () =>
       new MeshPhysicalMaterial({
-        color: '#ffffff',
-        metalness: 0,
+        color: primaryColor,
+        metalness: 0.3,
         roughness: 0.05,
-        transmission: 0.9,
+        transmission: 0.85,
         thickness: 0.5,
         ior: 1.5,
         clearcoat: 1,
         clearcoatRoughness: 0.1,
-        envMapIntensity: 0.4,
+        envMapIntensity: 0.5,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.85,
       }),
-    []
+    [primaryColor]
   );
 
   return (

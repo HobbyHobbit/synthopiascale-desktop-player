@@ -138,12 +138,12 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               Visual Effects
             </h3>
             <div className="space-y-4">
-              {/* Intensity Slider */}
+              {/* Bolt Count Slider */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Gauge className="w-4 h-4" />
-                    Intensity
+                    Blitze (Anzahl)
                   </label>
                   <span className="text-sm text-muted-foreground">
                     {Math.round(settings.intensity * 100)}%
@@ -151,8 +151,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
                 <input
                   type="range"
-                  min="0.1"
-                  max="2"
+                  min="1"
+                  max="5"
                   step="0.1"
                   value={settings.intensity}
                   onChange={(e) => setSettings({ intensity: parseFloat(e.target.value) })}

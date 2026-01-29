@@ -37,6 +37,7 @@ interface NowPlayingBarProps {
   onVolumeChange: (volume: number) => void;
   onOpenLibrary: () => void;
   onToggleFullVisualizer?: () => void;
+  primaryColor?: string;
 }
 
 export function NowPlayingBar({
@@ -50,6 +51,7 @@ export function NowPlayingBar({
   onVolumeChange,
   onOpenLibrary,
   onToggleFullVisualizer,
+  primaryColor = '#d4af37',
 }: NowPlayingBarProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -145,12 +147,12 @@ export function NowPlayingBar({
         }}
       >
         <div
-          className="absolute top-0 left-0 h-full bg-gold transition-all"
-          style={{ width: `${progress * 100}%` }}
+          className="absolute top-0 left-0 h-full transition-all"
+          style={{ width: `${progress * 100}%`, backgroundColor: primaryColor }}
         />
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-gold rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-          style={{ left: `calc(${progress * 100}% - 6px)` }}
+          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+          style={{ left: `calc(${progress * 100}% - 6px)`, backgroundColor: primaryColor }}
         />
       </div>
 
@@ -162,8 +164,8 @@ export function NowPlayingBar({
           onMouseLeave={() => setShowTooltip(false)}
         >
           {/* Album Art Placeholder */}
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gold/30 to-gold/10 flex items-center justify-center flex-shrink-0">
-            <div className="w-6 h-6 border-2 border-gold/50 rotate-45" />
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `linear-gradient(to bottom right, ${primaryColor}4D, ${primaryColor}1A)` }}>
+            <div className="w-6 h-6 rotate-45" style={{ border: `2px solid ${primaryColor}80` }} />
           </div>
 
           {trackInfo ? (
@@ -191,7 +193,7 @@ export function NowPlayingBar({
                 {trackInfo.bpm && (
                   <div className="flex justify-between">
                     <span className="text-white/50">BPM</span>
-                    <span className="text-gold">{trackInfo.bpm}</span>
+                    <span style={{ color: primaryColor }}>{trackInfo.bpm}</span>
                   </div>
                 )}
                 {trackInfo.key && (
@@ -232,9 +234,8 @@ export function NowPlayingBar({
             {/* Shuffle */}
             <button
               onClick={toggleShuffle}
-              className={`p-2 rounded-full transition-colors ${
-                shuffleEnabled ? 'text-gold' : 'text-white/50 hover:text-white/80'
-              }`}
+              className="p-2 rounded-full transition-colors"
+              style={{ color: shuffleEnabled ? primaryColor : 'rgba(255,255,255,0.5)' }}
               title="Shuffle"
             >
               <Shuffle className="w-4 h-4" />
@@ -270,9 +271,8 @@ export function NowPlayingBar({
             {/* Repeat */}
             <button
               onClick={cycleRepeatMode}
-              className={`p-2 rounded-full transition-colors ${
-                repeatMode !== 'off' ? 'text-gold' : 'text-white/50 hover:text-white/80'
-              }`}
+              className="p-2 rounded-full transition-colors"
+              style={{ color: repeatMode !== 'off' ? primaryColor : 'rgba(255,255,255,0.5)' }}
               title={`Repeat: ${repeatMode}`}
             >
               <RepeatIcon className="w-4 h-4" />

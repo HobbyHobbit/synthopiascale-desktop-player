@@ -144,6 +144,7 @@ const ROTATION_SPEED = 0.15;
 
 export interface MetalFrameProps {
   quality?: 'low' | 'high';
+  primaryColor?: string;
 }
 
 function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'high' }) {
@@ -165,7 +166,7 @@ function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'hi
   );
 }
 
-function MiddleGoldPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) {
+function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37' }: { quality?: 'low' | 'high'; primaryColor?: string }) {
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION + 0.26;
   const frameCountRef = useRef(0);
@@ -194,7 +195,7 @@ function MiddleGoldPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) 
 
   return (
     <mesh ref={meshRef} geometry={geometry} position={[0, 0, -0.15]}>
-      <meshPhysicalMaterial {...GOLD_MATERIAL_PROPS} />
+      <meshPhysicalMaterial {...GOLD_MATERIAL_PROPS} color={primaryColor} />
     </mesh>
   );
 }
@@ -233,11 +234,11 @@ function BackSilverPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) 
   );
 }
 
-export function MetalFrame({ quality = 'high' }: MetalFrameProps) {
+export function MetalFrame({ quality = 'high', primaryColor = '#d4af37' }: MetalFrameProps) {
   return (
     <group>
       <BackSilverPentagon quality={quality} />
-      <MiddleGoldPentagon quality={quality} />
+      <MiddleGoldPentagon quality={quality} primaryColor={primaryColor} />
       <FrontGlassFrame quality={quality} />
     </group>
   );
