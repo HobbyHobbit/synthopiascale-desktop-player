@@ -67,9 +67,10 @@ interface Bubble {
   active: boolean;
 }
 
-const MAX_BUBBLES = 500;
+const MAX_BUBBLES = 800;
 const INNER_RADIUS = 0.115;
 const MAX_OUTER_RADIUS = 0.99;
+const SWIRL_SPEED = 0.25; // Slow swirl rotation for water
 
 export function WaterVisualizer3D({
   analyser,
@@ -82,8 +83,8 @@ export function WaterVisualizer3D({
   const timeRef = useRef(0);
   const pulseRef = useRef(createPulseState());
 
-  // Bubble count scales with intensity setting
-  const activeBubbleCount = Math.floor(60 + globalIntensity * 440);
+  // Bubble count scales with intensity setting (more bubbles for visibility)
+  const activeBubbleCount = Math.floor(150 + globalIntensity * 650);
 
   // Create bubble texture once
   const bubbleTexture = useMemo(() => createBubbleTexture(), []);
@@ -120,23 +121,23 @@ export function WaterVisualizer3D({
   };
 
   const resetBubble = (b: Bubble, index: number, pulseIntensity: number) => {
-    const angle = getGoldenAngle(index, timeRef.current * 0.3);
-    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 8));
+    const angle = getGoldenAngle(index, timeRef.current * 0.15); // Slower angle progression
+    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 4));
     
-    // Speed based on pulse (creates wave effect on beats)
-    const baseSpeed = 0.5 + pulseIntensity * 1.8;
-    const speedVariation = 0.5 + seed * 0.8;
+    // Slower speed for more visible swirl effect
+    const baseSpeed = 0.2 + pulseIntensity * 0.6;
+    const speedVariation = 0.3 + seed * 0.5;
     
     b.x = Math.cos(angle) * INNER_RADIUS;
     b.y = Math.sin(angle) * INNER_RADIUS;
     b.z = -0.03 + seed * 0.06;
     b.vx = Math.cos(angle) * baseSpeed * speedVariation;
     b.vy = Math.sin(angle) * baseSpeed * speedVariation;
-    b.size = 0.012 + seed * 0.028 + pulseIntensity * 0.015;
+    b.size = 0.025 + seed * 0.045 + pulseIntensity * 0.02; // Larger bubbles
     b.wobblePhase = seed * Math.PI * 2;
-    b.wobbleSpeed = 2 + seed * 3;
+    b.wobbleSpeed = 1.5 + seed * 2;
     b.life = 0;
-    b.maxLife = 0.6 + seed * 1.0 + pulseIntensity * 0.3;
+    b.maxLife = 1.2 + seed * 1.5 + pulseIntensity * 0.5; // Longer life for visibility
     b.angle = angle;
     b.seed = seed;
     b.active = true;
@@ -196,18 +197,27 @@ export function WaterVisualizer3D({
 
       const lifeRatio = b.life / b.maxLife;
       
-      // Pulse-driven speed boost (creates strong wave ripple effect)
-      const pulseBoost = 1 + pulse.current * 2.5;
+      // Slower pulse response for smoother movement
+      const pulseBoost = 1 + pulse.current * 1.2;
+      
+      // Swirl effect: rotate around center while moving outward
+      const dist = Math.sqrt(b.x * b.x + b.y * b.y);
+      const currentAngle = Math.atan2(b.y, b.x);
+      const swirlAngle = currentAngle + SWIRL_SPEED * delta * (1 + pulse.current * 0.5);
+      
+      // Apply swirl rotation
+      const swirlX = Math.cos(swirlAngle) * dist;
+      const swirlY = Math.sin(swirlAngle) * dist;
       
       // Golden ratio wobble for organic bubble motion
       const wobblePhase = time * b.wobbleSpeed * PHI + b.wobblePhase;
-      const wobble = Math.sin(wobblePhase) * 0.03 * (1 - lifeRatio);
+      const wobble = Math.sin(wobblePhase) * 0.02 * (1 - lifeRatio);
       const perpX = -Math.sin(b.angle);
       const perpY = Math.cos(b.angle);
       
-      // Move outward with wobble
-      b.x += (b.vx + perpX * wobble) * delta * pulseBoost;
-      b.y += (b.vy + perpY * wobble) * delta * pulseBoost;
+      // Move outward slowly with swirl and wobble
+      b.x = swirlX + (b.vx + perpX * wobble) * delta * pulseBoost * 0.4;
+      b.y = swirlY + (b.vy + perpY * wobble) * delta * pulseBoost * 0.4;
       
       // Z wobble using golden ratio timing
       b.z += Math.sin(time * PHI * 2 + i * PHI) * 0.008 * delta;
@@ -217,9 +227,9 @@ export function WaterVisualizer3D({
       b.vy *= 0.998;
 
       // Clamp to max radius (same as plasma bolts)
-      const dist = Math.sqrt(b.x * b.x + b.y * b.y);
-      if (dist > MAX_OUTER_RADIUS) {
-        const scale = MAX_OUTER_RADIUS / dist;
+      const finalDist = Math.sqrt(b.x * b.x + b.y * b.y);
+      if (finalDist > MAX_OUTER_RADIUS) {
+        const scale = MAX_OUTER_RADIUS / finalDist;
         b.x *= scale;
         b.y *= scale;
         b.vx *= 0.5;
@@ -241,10 +251,10 @@ export function WaterVisualizer3D({
       colors[i * 3 + 1] = waterColor.g;
       colors[i * 3 + 2] = waterColor.b;
 
-      // Bubbles grow then shrink, with strong pulse effect
+      // Bubbles grow then shrink, stays larger for visibility
       const sizePhase = Math.sin(lifeRatio * Math.PI);
-      const sizePulse = 1 + pulse.current * 1.2;
-      sizes[i] = b.size * sizePhase * sizePulse;
+      const sizePulse = 1 + pulse.current * 1.0;
+      sizes[i] = b.size * sizePhase * sizePulse * 1.8;
     }
 
     const geometry = pointsRef.current.geometry;

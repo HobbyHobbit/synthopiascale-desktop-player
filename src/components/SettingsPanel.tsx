@@ -142,26 +142,39 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               Visual Effects
             </h3>
             <div className="space-y-4">
-              {/* Bolt Count Slider */}
+              {/* Intensity Slider: -90% to 1000%, center is 100% */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Gauge className="w-4 h-4" />
-                    Blitze (Anzahl)
+                    Intensity
                   </label>
                   <span className="text-sm text-muted-foreground">
-                    {Math.round(settings.intensity * 100)}%
+                    {settings.intensity <= 0.1 ? 'OFF' : `${Math.round((settings.intensity - 1) * 100 + 100)}%`}
                   </span>
                 </div>
                 <input
                   type="range"
-                  min="1"
-                  max="5"
+                  min="0.1"
+                  max="10"
                   step="0.1"
                   value={settings.intensity}
-                  onChange={(e) => setSettings({ intensity: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    // At minimum (0.1), disable visualization
+                    if (value <= 0.1) {
+                      setSettings({ intensity: value, plasmaEnabled: false });
+                    } else {
+                      setSettings({ intensity: value, plasmaEnabled: true });
+                    }
+                  }}
                   className="w-full"
                 />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>-90%</span>
+                  <span>100%</span>
+                  <span>1000%</span>
+                </div>
               </div>
 
               {/* Visualizer Type Selector */}
@@ -192,57 +205,103 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="space-y-3">
-                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Audio Visualisierung aktiv
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.plasmaEnabled}
-                    onChange={(e) => setSettings({ plasmaEnabled: e.target.checked })}
-                    className="w-5 h-5 accent-primary-solid"
-                  />
-                </label>
-                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <RotateCcw className="w-4 h-4" />
-                    Rotation & Treppenanimation
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.rotationEnabled}
-                    onChange={(e) => setSettings({ rotationEnabled: e.target.checked })}
-                    className="w-5 h-5 accent-primary-solid"
-                  />
-                </label>
-                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Hintergrund Partikel
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.particlesEnabled}
-                    onChange={(e) => setSettings({ particlesEnabled: e.target.checked })}
-                    className="w-5 h-5 accent-primary-solid"
-                  />
-                </label>
-                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <MousePointer2 className="w-4 h-4" />
-                    Partikel Maus-Hover Effekt
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.particleHoverEnabled}
-                    onChange={(e) => setSettings({ particleHoverEnabled: e.target.checked })}
-                    className="w-5 h-5 accent-primary-solid"
-                  />
-                </label>
-              </div>
+            </div>
+          </section>
+
+          {/* UI Elements - Combined section */}
+          <section>
+            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
+              <Layers className="w-5 h-5 text-primary-solid" />
+              UI Elements
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Toggle UI elements and visual effects
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Audio Visualisierung
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.plasmaEnabled}
+                  onChange={(e) => setSettings({ plasmaEnabled: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Rotation & Animation
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.rotationEnabled}
+                  onChange={(e) => setSettings({ rotationEnabled: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Hintergrund Partikel
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.particlesEnabled}
+                  onChange={(e) => setSettings({ particlesEnabled: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <MousePointer2 className="w-4 h-4" />
+                  Partikel Hover Effekt
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.particleHoverEnabled}
+                  onChange={(e) => setSettings({ particleHoverEnabled: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Type className="w-4 h-4" />
+                  Branding & Text
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showBranding}
+                  onChange={(e) => setSettings({ showBranding: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <BarChart2 className="w-4 h-4" />
+                  EQ Bars
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showEQBars}
+                  onChange={(e) => setSettings({ showEQBars: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Timeline & Track Info
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.showTimeline}
+                  onChange={(e) => setSettings({ showTimeline: e.target.checked, showTrackInfo: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
             </div>
           </section>
 
@@ -411,55 +470,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   </div>
                 </div>
               )}
-            </div>
-          </section>
-
-          {/* UI Visibility */}
-          <section>
-            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
-              <Layers className="w-5 h-5 text-primary-solid" />
-              UI Overlay
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Toggle UI elements to see the visualizer more clearly
-            </p>
-            <div className="space-y-3">
-              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <span className="flex items-center gap-2">
-                  <Type className="w-4 h-4" />
-                  Branding & Text
-                </span>
-                <input
-                  type="checkbox"
-                  checked={settings.showBranding}
-                  onChange={(e) => setSettings({ showBranding: e.target.checked })}
-                  className="w-5 h-5 accent-primary-solid"
-                />
-              </label>
-              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <span className="flex items-center gap-2">
-                  <BarChart2 className="w-4 h-4" />
-                  EQ Bars
-                </span>
-                <input
-                  type="checkbox"
-                  checked={settings.showEQBars}
-                  onChange={(e) => setSettings({ showEQBars: e.target.checked })}
-                  className="w-5 h-5 accent-primary-solid"
-                />
-              </label>
-              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <span className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Timeline & Track Info
-                </span>
-                <input
-                  type="checkbox"
-                  checked={settings.showTimeline}
-                  onChange={(e) => setSettings({ showTimeline: e.target.checked, showTrackInfo: e.target.checked })}
-                  className="w-5 h-5 accent-primary-solid"
-                />
-              </label>
             </div>
           </section>
 

@@ -32,9 +32,10 @@ interface SparkParticle {
   active: boolean;
 }
 
-const MAX_PARTICLES = 800;
+const MAX_PARTICLES = 1200;
 const INNER_RADIUS = 0.115;
 const MAX_OUTER_RADIUS = 0.99;
+const SWIRL_SPEED = 0.3; // Slow swirl rotation
 
 export function FireVisualizer3D({
   analyser,
@@ -48,8 +49,8 @@ export function FireVisualizer3D({
   const pulseRef = useRef(createPulseState());
   const audioIntensityRef = useRef(0);
 
-  // Particle count scales with intensity setting
-  const activeParticleCount = Math.floor(100 + globalIntensity * 700);
+  // Particle count scales with intensity setting (more particles for visibility)
+  const activeParticleCount = Math.floor(200 + globalIntensity * 1000);
 
   const { positions, colors, sizes } = useMemo(() => {
     const positions = new Float32Array(MAX_PARTICLES * 3);
@@ -81,12 +82,12 @@ export function FireVisualizer3D({
   };
 
   const resetParticle = (p: SparkParticle, index: number, pulseIntensity: number) => {
-    const angle = getGoldenAngle(index, timeRef.current * 0.5);
-    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 10));
+    const angle = getGoldenAngle(index, timeRef.current * 0.2); // Slower angle progression
+    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 5));
     
-    // Speed based on pulse (creates burst effect on beats)
-    const baseSpeed = 0.8 + pulseIntensity * 2.5;
-    const speedVariation = 0.6 + seed * 0.8;
+    // Slower speed for more visible swirl effect
+    const baseSpeed = 0.25 + pulseIntensity * 0.8;
+    const speedVariation = 0.4 + seed * 0.6;
     
     p.x = Math.cos(angle) * INNER_RADIUS;
     p.y = Math.sin(angle) * INNER_RADIUS;
@@ -94,8 +95,8 @@ export function FireVisualizer3D({
     p.vx = Math.cos(angle) * baseSpeed * speedVariation;
     p.vy = Math.sin(angle) * baseSpeed * speedVariation;
     p.life = 0;
-    p.maxLife = 0.2 + seed * 0.4 + pulseIntensity * 0.2;
-    p.size = 0.002 + seed * 0.006 + pulseIntensity * 0.004;
+    p.maxLife = 0.8 + seed * 1.2 + pulseIntensity * 0.4; // Longer life for visibility
+    p.size = 0.006 + seed * 0.012 + pulseIntensity * 0.008; // Larger particles
     p.angle = angle;
     p.seed = seed;
     p.active = true;
@@ -157,25 +158,34 @@ export function FireVisualizer3D({
 
       const lifeRatio = p.life / p.maxLife;
       
-      // Pulse-driven speed boost - much stronger response
-      const pulseBoost = 1 + pulse.current * 3.0;
-      const flicker = Math.sin(time * 15 * PHI + i * 0.3) * 0.3;
-      const speedMod = pulseBoost * (1 + flicker * 0.3);
+      // Slower pulse response for smoother movement
+      const pulseBoost = 1 + pulse.current * 1.5;
+      const flicker = Math.sin(time * 8 * PHI + i * 0.3) * 0.2;
+      const speedMod = pulseBoost * (1 + flicker * 0.2);
       
-      // Move outward with strong pulse acceleration
-      p.x += p.vx * delta * speedMod;
-      p.y += p.vy * delta * speedMod;
-      p.z += (goldenRandom(i + Math.floor(time * 20)) - 0.5) * 0.03 * delta;
+      // Swirl effect: rotate around center while moving outward
+      const dist = Math.sqrt(p.x * p.x + p.y * p.y);
+      const currentAngle = Math.atan2(p.y, p.x);
+      const swirlAngle = currentAngle + SWIRL_SPEED * delta * (1 + pulse.current);
+      
+      // Apply swirl rotation
+      const swirlX = Math.cos(swirlAngle) * dist;
+      const swirlY = Math.sin(swirlAngle) * dist;
+      
+      // Move outward slowly with swirl
+      p.x = swirlX + p.vx * delta * speedMod * 0.5;
+      p.y = swirlY + p.vy * delta * speedMod * 0.5;
+      p.z += (goldenRandom(i + Math.floor(time * 10)) - 0.5) * 0.02 * delta;
 
-      // Golden ratio turbulence for organic motion
-      const turbPhase = time * 8 + i * PHI;
-      p.vx += Math.sin(turbPhase) * 0.08 * delta;
-      p.vy += Math.cos(turbPhase * PHI) * 0.08 * delta;
+      // Gentle turbulence for organic motion
+      const turbPhase = time * 4 + i * PHI;
+      p.vx += Math.sin(turbPhase) * 0.04 * delta;
+      p.vy += Math.cos(turbPhase * PHI) * 0.04 * delta;
 
       // Clamp to max radius (same as plasma bolts)
-      const dist = Math.sqrt(p.x * p.x + p.y * p.y);
-      if (dist > MAX_OUTER_RADIUS) {
-        const scale = MAX_OUTER_RADIUS / dist;
+      const finalDist = Math.sqrt(p.x * p.x + p.y * p.y);
+      if (finalDist > MAX_OUTER_RADIUS) {
+        const scale = MAX_OUTER_RADIUS / finalDist;
         p.x *= scale;
         p.y *= scale;
         // Slow down at edge
@@ -188,15 +198,15 @@ export function FireVisualizer3D({
       positions[i * 3 + 2] = p.z;
 
       // Distance-based color: pale/white at center, intense primaryColor at edge
-      const normalizedDist = Math.min(1, (dist - INNER_RADIUS) / (MAX_OUTER_RADIUS - INNER_RADIUS));
+      const normalizedDist = Math.min(1, (finalDist - INNER_RADIUS) / (MAX_OUTER_RADIUS - INNER_RADIUS));
       const fireColor = getFireColor(baseColor, pulse.current, lifeRatio, normalizedDist);
       colors[i * 3] = fireColor.r;
       colors[i * 3 + 1] = fireColor.g;
       colors[i * 3 + 2] = fireColor.b;
 
-      // Size pulses strongly with audio
-      const sizePulse = 1 + pulse.current * 1.5;
-      sizes[i] = p.size * (1 - lifeRatio * 0.6) * sizePulse;
+      // Size pulses with audio, stays larger for visibility
+      const sizePulse = 1 + pulse.current * 1.2;
+      sizes[i] = p.size * (1 - lifeRatio * 0.4) * sizePulse * 1.5;
     }
 
     const geometry = pointsRef.current.geometry;
