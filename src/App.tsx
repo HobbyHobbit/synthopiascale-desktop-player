@@ -13,7 +13,7 @@ import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders, Tv } from 'lucide-react';
+import { Settings as SettingsIcon, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -52,7 +52,6 @@ function App() {
   const [showEQ, setShowEQ] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
-  const [studioMode, setStudioMode] = useState(false); // Full visualizer mode
   const { settings, loadSettings, setSettings } = useAppStore();
   const { volume, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
   const { 
@@ -181,7 +180,7 @@ function App() {
     onSeekForward: handleSeekForward,
     onSeekBackward: handleSeekBackward,
     onToggleHelp: () => setShowHelp(prev => !prev),
-    onToggleStudioMode: () => setStudioMode(prev => !prev),
+    onToggleStudioMode: toggleFullscreen, // S key now toggles fullscreen
   });
 
   // Media session for system media controls
@@ -237,8 +236,8 @@ function App() {
         />
       </GlassCard>
 
-      {/* Top Controls - hidden in studio mode */}
-      {!studioMode && (
+      {/* Top Controls - hidden in fullscreen mode */}
+      {!isFullscreen && (
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           <button
             onClick={() => setShowHelp(true)}
@@ -273,35 +272,17 @@ function App() {
             )}
           </button>
           <button
-            onClick={() => setStudioMode(prev => !prev)}
-            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${studioMode ? 'bg-purple-500/20' : ''}`}
-            title={studioMode ? 'Exit Studio Mode (S)' : 'Studio Mode (S)'}
-          >
-            <Tv className={`w-5 h-5 ${studioMode ? 'text-purple-400' : 'text-foreground/70 hover:text-foreground'}`} />
-          </button>
-          <button
             onClick={() => setShowSettings(true)}
             className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
             title="Settings (Ctrl+,)"
           >
             <SettingsIcon className="w-5 h-5 text-foreground/70 hover:text-foreground" />
           </button>
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-            title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-            ) : (
-              <Maximize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-            )}
-          </button>
         </div>
       )}
 
-      {/* Branding (when glass card is hidden) */}
-      {!settings.showGlassCard && !studioMode && (
+      {/* Branding (when glass card is hidden and not fullscreen) */}
+      {!settings.showGlassCard && !isFullscreen && (
         <div className="absolute bottom-20 left-4 z-40">
           <h1 className="text-lg font-semibold text-foreground/80">
             <span className="text-primary-solid">SynthopiaScale</span> Records
@@ -310,8 +291,8 @@ function App() {
         </div>
       )}
 
-      {/* Prominent Play Controls - ONLY visible in studio mode (NowPlayingBar has controls otherwise) */}
-      {studioMode && !transparentMode && (
+      {/* Prominent Play Controls - ONLY visible in fullscreen mode */}
+      {isFullscreen && !transparentMode && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
           {/* Previous */}
           <button
@@ -357,13 +338,13 @@ function App() {
       {/* EQ Panel */}
       <EQPanel visible={showEQ} onClose={() => setShowEQ(false)} />
 
-      {/* Studio Mode Indicator - minimal branding */}
-      {studioMode && !transparentMode && (
+      {/* Fullscreen Mode Indicator - minimal branding */}
+      {isFullscreen && !transparentMode && (
         <div className="absolute top-4 left-4 z-40 opacity-50 hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-2 text-sm text-white/70">
             <span className="text-gold">●</span>
-            <span>Studio Mode</span>
-            <span className="text-white/40 text-xs">(S to exit)</span>
+            <span>Vollbildmodus</span>
+            <span className="text-white/40 text-xs">(F11/S to exit)</span>
           </div>
         </div>
       )}
@@ -379,8 +360,8 @@ function App() {
         onAudioModeChange={setAudioMode}
       />
 
-      {/* Now Playing Bar - shown when glass card is hidden (NOT in studio mode to avoid redundancy) */}
-      {!settings.showGlassCard && !studioMode && !transparentMode && (
+      {/* Now Playing Bar - shown when glass card is hidden (NOT in fullscreen to avoid redundancy) */}
+      {!settings.showGlassCard && !isFullscreen && !transparentMode && (
         <NowPlayingBar
           isPlaying={isPlaying}
           currentTime={currentTime}
@@ -391,7 +372,7 @@ function App() {
           onSeek={seek}
           onVolumeChange={handleVolumeChange}
           onOpenLibrary={() => setShowLibrary(true)}
-          onToggleFullVisualizer={() => setStudioMode(prev => !prev)}
+          onToggleFullVisualizer={toggleFullscreen}
         />
       )}
     </div>

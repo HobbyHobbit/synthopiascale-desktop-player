@@ -113,13 +113,16 @@ export function AudioVisualizer3D({
   const frequencyDataRef = useRef<number[]>([]);
   const [renderKey, setRenderKey] = useState(0);
 
-  const tendrilCount = 72;
+  // Intensity controls visible bolt count (0-72), not length
+  // Minimum 8 bolts even at 0% intensity for visual continuity
+  const baseTendrilCount = 72;
+  const visibleTendrilCount = Math.max(8, Math.floor(baseTendrilCount * globalIntensity));
   const innerRadius = 0.115;
-  const maxOuterRadius = 0.99;
+  const maxOuterRadius = 0.99; // Always max length
 
   useEffect(() => {
-    frequencyDataRef.current = new Array(tendrilCount).fill(0);
-  }, [tendrilCount]);
+    frequencyDataRef.current = new Array(baseTendrilCount).fill(0);
+  }, []);
 
   useFrame((_, delta) => {
     timeRef.current += delta;
@@ -144,12 +147,13 @@ export function AudioVisualizer3D({
     const highBin = Math.floor(500 / binResolution);
     const binRange = highBin - lowBin;
 
-    for (let i = 0; i < tendrilCount; i++) {
-      const binIndex = lowBin + Math.floor((i / tendrilCount) * binRange);
+    for (let i = 0; i < baseTendrilCount; i++) {
+      const binIndex = lowBin + Math.floor((i / baseTendrilCount) * binRange);
       const rawValue = (dataArray[binIndex] ?? 0) / 255;
 
       const threshold = 0.25 + seededRandom(i * 31) * 0.15;
-      const value = rawValue > threshold ? ((rawValue - threshold) / (1 - threshold)) * globalIntensity : 0;
+      // Full intensity for length, globalIntensity only affects visible count
+      const value = rawValue > threshold ? ((rawValue - threshold) / (1 - threshold)) : 0;
 
       const decay = value > frequencyDataRef.current[i] ? 0.5 : 0.7;
       frequencyDataRef.current[i] = frequencyDataRef.current[i] * decay + value * (1 - decay);
@@ -159,23 +163,30 @@ export function AudioVisualizer3D({
   });
 
   const tendrils = useMemo(() => {
-    return Array.from({ length: tendrilCount }, (_, i) => ({
-      angle: (i / tendrilCount) * Math.PI * 2 - Math.PI / 2,
-      colorIndex: i,
-    }));
-  }, [tendrilCount]);
+    // Only create visible tendrils based on intensity setting
+    return Array.from({ length: visibleTendrilCount }, (_, i) => {
+      // Distribute evenly around the circle
+      const index = Math.floor((i / visibleTendrilCount) * baseTendrilCount);
+      return {
+        angle: (index / baseTendrilCount) * Math.PI * 2 - Math.PI / 2,
+        colorIndex: index,
+        dataIndex: index,
+      };
+    });
+  }, [visibleTendrilCount]);
 
   if (!isPlaying && frequencyDataRef.current.every((v) => v < 0.01)) return null;
 
   return (
     <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>
       {tendrils.map((t, i) => {
-        const intensity = frequencyDataRef.current[i] || 0;
+        const intensity = frequencyDataRef.current[t.dataIndex] || 0;
         if (intensity < 0.15) return null;
 
+        // Length always at max (maxOuterRadius), intensity only affects color/animation
         const length = innerRadius + intensity * (maxOuterRadius - innerRadius);
-        const color = getPlasmaColor(intensity, i * 137);
-        const points = generatePlasmaLightning(t.angle, length, intensity, timeRef.current, i * 137);
+        const color = getPlasmaColor(intensity, t.colorIndex * 137);
+        const points = generatePlasmaLightning(t.angle, length, intensity, timeRef.current, t.colorIndex * 137);
 
         return <Line key={i} points={points} color={color} lineWidth={0.4 + intensity * 0.3} />;
       })}

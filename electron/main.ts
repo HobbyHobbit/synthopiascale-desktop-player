@@ -97,12 +97,12 @@ function createWindow(): void {
     mainWindow?.show();
   });
 
-  mainWindow.on('close', (event) => {
-    if (!isQuitting) {
-      event.preventDefault();
-      mainWindow?.hide();
-      return false;
-    }
+  mainWindow.on('close', () => {
+    // Always quit properly when window is closed
+    // This ensures audio stops and process terminates cleanly
+    isQuitting = true;
+    saveWindowState();
+    app.quit();
   });
 
   mainWindow.on('closed', () => {
