@@ -27,16 +27,6 @@ export interface Settings {
   showTimeline: boolean;
 }
 
-// Settings that are automatically disabled in performance mode
-// Note: showEQBars is NOT disabled - it's the visual performance feature that stays on
-const PERFORMANCE_MODE_DISABLED_SETTINGS: (keyof Settings)[] = [
-  'particlesEnabled',
-  'particleHoverEnabled',
-  'plasmaEnabled',
-  'rotationEnabled',
-  'showGlassCard',
-  'showBranding',
-];
 
 interface AppState {
   settings: Settings;
@@ -49,7 +39,6 @@ interface AppState {
   }>;
   currentDisplay: number;
   isRecording: boolean;
-  previousHighQualitySettings: Partial<Settings> | null;
   setSettings: (settings: Partial<Settings>) => void;
   setPerformanceMode: (enabled: boolean) => void;
   loadSettings: () => Promise<void>;
@@ -86,7 +75,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   displays: [],
   currentDisplay: 0,
   isRecording: false,
-  previousHighQualitySettings: null,
 
   setSettings: (newSettings) => {
     set((state) => ({
@@ -99,38 +87,35 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     
     if (enabled) {
-      // Save current settings before switching to performance mode
-      const settingsToSave: Partial<Settings> = {};
-      for (const key of PERFORMANCE_MODE_DISABLED_SETTINGS) {
-        settingsToSave[key] = state.settings[key] as never;
-      }
-      
-      // Disable performance-heavy features but keep EQ bars as visual feature
+      // Performance mode: GlassCard visible, all heavy animations OFF
       const performanceSettings: Partial<Settings> = {
         quality: 'low',
         particlesEnabled: false,
         particleHoverEnabled: false,
         plasmaEnabled: false,
         rotationEnabled: false,
-        showGlassCard: false,
+        showGlassCard: true, // GlassCard IS the performance mode UI
         showBranding: false,
         // showEQBars stays enabled - it's the visual performance feature
       };
       
       set({
-        previousHighQualitySettings: settingsToSave,
         settings: { ...state.settings, ...performanceSettings },
       });
     } else {
-      // Restore previous settings when switching back to high quality
-      const restored = state.previousHighQualitySettings || {};
+      // Quality mode: GlassCard hidden, all features ON
+      const qualitySettings: Partial<Settings> = {
+        quality: 'high',
+        particlesEnabled: true,
+        particleHoverEnabled: true,
+        plasmaEnabled: true,
+        rotationEnabled: true,
+        showGlassCard: false, // GlassCard hidden in quality mode
+        showBranding: true,
+      };
+      
       set({
-        previousHighQualitySettings: null,
-        settings: { 
-          ...state.settings, 
-          quality: 'high',
-          ...restored,
-        },
+        settings: { ...state.settings, ...qualitySettings },
       });
     }
     

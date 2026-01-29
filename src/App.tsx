@@ -114,15 +114,13 @@ function App() {
     return () => cancelAnimationFrame(animationId);
   }, [analyser, isPlaying]);
 
-  // Performance mode: enables glass card overlay and disables all heavy animations
+  // Performance mode: GlassCard visible = performance mode (animations off)
+  // Quality mode: GlassCard hidden = all features on
   const { setPerformanceMode } = useAppStore();
   const togglePerformanceMode = useCallback(() => {
-    const newPerformanceMode = !settings.showGlassCard;
-    // Use setPerformanceMode which handles all animation disabling
-    setPerformanceMode(newPerformanceMode);
-    // Also set showGlassCard since it's the visual indicator
-    setSettings({ showGlassCard: newPerformanceMode });
-  }, [settings.showGlassCard, setSettings, setPerformanceMode]);
+    // Toggle based on current GlassCard state
+    setPerformanceMode(!settings.showGlassCard);
+  }, [settings.showGlassCard, setPerformanceMode]);
 
   // Handle files opened from system (Open With)
   const handleFilesFromSystem = useCallback((files: Array<{ path: string; name: string }>) => {
