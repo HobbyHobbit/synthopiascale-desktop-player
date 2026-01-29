@@ -13,6 +13,7 @@ import {
   BarChart2,
   Clock,
   Sun,
+  Sparkles,
   Check,
 } from 'lucide-react';
 import { useAppStore, AudioSource, Quality } from '../store/appStore';
@@ -170,6 +171,18 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     type="checkbox"
                     checked={settings.plasmaEnabled}
                     onChange={(e) => setSettings({ plasmaEnabled: e.target.checked })}
+                    className="w-5 h-5 accent-primary-solid"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Background Particles
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.particlesEnabled}
+                    onChange={(e) => setSettings({ particlesEnabled: e.target.checked })}
                     className="w-5 h-5 accent-primary-solid"
                   />
                 </label>

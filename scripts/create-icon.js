@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const inputPath = path.join(__dirname, '..', 'SynthopiaScale Logo(ohne Text).jpg');
 const outputDir = path.join(__dirname, '..', 'build');
-const outputPath = path.join(outputDir, 'icon.ico');
+const icoPath = path.join(outputDir, 'icon.ico');
 const pngPath = path.join(outputDir, 'icon.png');
 
 async function createIcon() {
@@ -21,8 +21,9 @@ async function createIcon() {
 
   console.log('Created PNG icon at:', pngPath);
   
-  // For ICO, we need multiple sizes - create them
+  // Create multiple PNG sizes for ICO
   const sizes = [16, 32, 48, 256];
+  
   for (const size of sizes) {
     const sizePath = path.join(outputDir, `icon-${size}.png`);
     await sharp(inputPath)
@@ -32,8 +33,17 @@ async function createIcon() {
     console.log(`Created ${size}x${size} PNG`);
   }
   
-  console.log('\nPNG files created. Use an online converter or electron-builder will handle the conversion.');
-  console.log('Alternatively, copy icon.png to icon.ico and electron-builder may accept it.');
+  // Create ICO using png-to-ico (default export)
+  const pngToIco = require('png-to-ico').default || require('png-to-ico');
+  try {
+    const icoBuffer = await pngToIco(path.join(outputDir, 'icon-256.png'));
+    fs.writeFileSync(icoPath, icoBuffer);
+    console.log('Created ICO icon at:', icoPath);
+  } catch (err) {
+    console.log('ICO creation skipped - electron-builder will convert PNG automatically');
+    // Copy PNG as fallback
+    fs.copyFileSync(pngPath, icoPath);
+  }
 }
 
 createIcon().catch(console.error);

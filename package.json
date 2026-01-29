@@ -51,6 +51,7 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
+    "png-to-ico": "^3.0.1",
     "postcss": "^8.4.33",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
@@ -85,7 +86,7 @@
           ]
         }
       ],
-      "icon": "build/icon.png",
+      "icon": "build/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },
