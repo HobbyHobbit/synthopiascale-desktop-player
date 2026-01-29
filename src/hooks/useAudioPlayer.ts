@@ -320,7 +320,9 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
   }, [currentTime, getPrevTrackIndex, setQueueIndex]);
 
   const playTrackById = useCallback((trackId: string) => {
-    const index = queue.indexOf(trackId);
+    // Get fresh queue state directly from store to handle recently added tracks
+    const currentQueue = usePlaylistStore.getState().queue;
+    const index = currentQueue.indexOf(trackId);
     if (index !== -1) {
       setQueueIndex(index);
       setCurrentTime(0);
@@ -340,7 +342,7 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         }
       }, 100);
     }
-  }, [queue, setQueueIndex, setupAudioContext]);
+  }, [setQueueIndex, setupAudioContext]);
 
   const setAudioMode = useCallback((mode: 'internal' | 'system') => {
     setAudioModeState(mode);

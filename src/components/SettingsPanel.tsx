@@ -205,37 +205,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
               </div>
 
-              {/* Performance / Quality Mode Selector */}
-              <div>
-                <label className="flex items-center gap-2 text-sm mb-2">
-                  <Gauge className="w-4 h-4" />
-                  Modus
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setPerformanceMode(true)}
-                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
-                      settings.showGlassCard
-                        ? 'bg-green-500/20 border border-green-500'
-                        : 'bg-white/5 border border-transparent hover:bg-white/10'
-                    }`}
-                  >
-                    <Zap className={`w-5 h-5 ${settings.showGlassCard ? 'text-green-400' : 'text-muted-foreground'}`} />
-                    <span className="text-xs">Performance</span>
-                  </button>
-                  <button
-                    onClick={() => setPerformanceMode(false)}
-                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
-                      !settings.showGlassCard
-                        ? 'bg-primary-solid/20 border border-primary-solid'
-                        : 'bg-white/5 border border-transparent hover:bg-white/10'
-                    }`}
-                  >
-                    <Sparkles className={`w-5 h-5 ${!settings.showGlassCard ? 'text-primary-solid' : 'text-muted-foreground'}`} />
-                    <span className="text-xs">Quality</span>
-                  </button>
-                </div>
-              </div>
 
             </div>
           </section>
@@ -331,6 +300,18 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   type="checkbox"
                   checked={settings.showTimeline}
                   onChange={(e) => setSettings({ showTimeline: e.target.checked, showTrackInfo: e.target.checked })}
+                  className="w-5 h-5 accent-primary-solid"
+                />
+              </label>
+              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <MonitorPlay className="w-4 h-4" />
+                  Always on Top
+                </span>
+                <input
+                  type="checkbox"
+                  checked={alwaysOnTop}
+                  onChange={(e) => handleAlwaysOnTopChange(e.target.checked)}
                   className="w-5 h-5 accent-primary-solid"
                 />
               </label>
@@ -462,48 +443,33 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             )}
           </section>
 
-          {/* Window Settings */}
-          <section>
-            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
-              <MonitorPlay className="w-5 h-5 text-primary-solid" />
-              Window
-            </h3>
-            <div className="space-y-4">
-              <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <span>Always on Top</span>
-                <input
-                  type="checkbox"
-                  checked={alwaysOnTop}
-                  onChange={(e) => handleAlwaysOnTopChange(e.target.checked)}
-                  className="w-5 h-5 accent-primary-solid"
-                />
-              </label>
-
-              {displays.length > 1 && (
-                <div>
-                  <p className="text-sm mb-2">Display</p>
-                  <div className="flex gap-2">
-                    {displays.map((display) => (
-                      <button
-                        key={display.id}
-                        onClick={() => handleDisplayChange(display.index)}
-                        className={`
-                          flex-1 py-2 px-3 rounded-lg transition-all
-                          ${display.primary 
-                            ? 'bg-primary-solid/20 border border-primary-solid' 
-                            : 'bg-white/5 hover:bg-white/10'
-                          }
-                        `}
-                      >
-                        {display.label}
-                        {display.primary && ' (Primary)'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
+          {/* Window Settings - Display Selection */}
+          {displays.length > 1 && (
+            <section>
+              <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
+                <MonitorPlay className="w-5 h-5 text-primary-solid" />
+                Display
+              </h3>
+              <div className="flex gap-2">
+                {displays.map((display) => (
+                  <button
+                    key={display.id}
+                    onClick={() => handleDisplayChange(display.index)}
+                    className={`
+                      flex-1 py-2 px-3 rounded-lg transition-all
+                      ${display.primary 
+                        ? 'bg-primary-solid/20 border border-primary-solid' 
+                        : 'bg-white/5 hover:bg-white/10'
+                      }
+                    `}
+                  >
+                    {display.label}
+                    {display.primary && ' (Primary)'}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Recording */}
           <section>

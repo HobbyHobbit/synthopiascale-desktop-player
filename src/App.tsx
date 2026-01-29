@@ -334,8 +334,8 @@ function App() {
         </div>
       )}
 
-      {/* Prominent Play Controls - ONLY visible in fullscreen mode */}
-      {isFullscreen && !transparentMode && (
+      {/* Prominent Play Controls - ONLY visible in fullscreen mode AND quality mode */}
+      {isFullscreen && !transparentMode && !settings.showGlassCard && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
           {/* Previous */}
           <button
