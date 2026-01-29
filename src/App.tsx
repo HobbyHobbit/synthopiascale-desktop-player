@@ -13,7 +13,7 @@ import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { Settings as SettingsIcon, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders, Sparkles } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -117,10 +117,6 @@ function App() {
   // Performance mode: GlassCard visible = performance mode (animations off)
   // Quality mode: GlassCard hidden = all features on
   const { setPerformanceMode } = useAppStore();
-  const togglePerformanceMode = useCallback(() => {
-    // Toggle based on current GlassCard state
-    setPerformanceMode(!settings.showGlassCard);
-  }, [settings.showGlassCard, setPerformanceMode]);
 
   // Handle files opened from system (Open With)
   const handleFilesFromSystem = useCallback((files: Array<{ path: string; name: string }>) => {
@@ -305,15 +301,18 @@ function App() {
             <Sliders className={`w-5 h-5 ${showEQ ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
           </button>
           <button
-            onClick={togglePerformanceMode}
+            onClick={() => setPerformanceMode(true)}
             className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showGlassCard ? 'bg-green-500/20' : ''}`}
-            title={settings.showGlassCard ? 'Quality Mode (alle Effekte an)' : 'Performance Mode (leichtgewichtig)'}
+            title="Performance Mode (leichtgewichtig)"
           >
-            {settings.showGlassCard ? (
-              <Zap className="w-5 h-5 text-green-400" />
-            ) : (
-              <Zap className="w-5 h-5 text-foreground/70 hover:text-foreground" />
-            )}
+            <Zap className={`w-5 h-5 ${settings.showGlassCard ? 'text-green-400' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <button
+            onClick={() => setPerformanceMode(false)}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${!settings.showGlassCard ? 'bg-primary-solid/20' : ''}`}
+            title="Quality Mode (alle Effekte an)"
+          >
+            <Sparkles className={`w-5 h-5 ${!settings.showGlassCard ? 'text-primary-solid' : 'text-foreground/70 hover:text-foreground'}`} />
           </button>
           <button
             onClick={() => setShowSettings(true)}
