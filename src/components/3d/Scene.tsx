@@ -14,6 +14,7 @@ export interface SceneProps {
   intensity: number;
   primaryColor: string;
   showGlassCard: boolean;
+  plasmaEnabled: boolean;
 }
 
 // Reduced animation speeds for smoother performance
@@ -30,6 +31,7 @@ export const Scene = memo(function Scene({
   intensity,
   primaryColor,
   showGlassCard,
+  plasmaEnabled,
 }: SceneProps) {
   const logoGroupRef = useRef<Group>(null);
   const fillLightRef = useRef<DirectionalLight>(null);
@@ -79,8 +81,8 @@ export const Scene = memo(function Scene({
 
       {/* Logo Group */}
       <group ref={logoGroupRef}>
-        {/* Audio Visualizer - essential branding, shown when GlassCard is hidden */}
-        {!showGlassCard && (
+        {/* Audio Visualizer - shown when GlassCard hidden OR plasma explicitly enabled */}
+        {(!showGlassCard || plasmaEnabled) && (
           <AudioVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}

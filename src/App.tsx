@@ -215,6 +215,7 @@ function App() {
           primaryColor={settings.primaryColor}
           quality={settings.quality}
           showGlassCard={settings.showGlassCard}
+          plasmaEnabled={settings.plasmaEnabled}
         />
       </ErrorBoundary>
 
@@ -233,6 +234,7 @@ function App() {
           showEQBars={settings.showEQBars}
           showTimeline={settings.showTimeline}
           showTrackInfo={settings.showTrackInfo}
+          onToggleFullscreen={toggleFullscreen}
         />
       </GlassCard>
 

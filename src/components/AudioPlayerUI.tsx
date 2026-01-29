@@ -7,7 +7,8 @@ import {
   Shuffle, 
   Repeat,
   Volume2,
-  VolumeX
+  VolumeX,
+  Maximize2
 } from 'lucide-react';
 
 export interface TrackInfo {
@@ -32,6 +33,7 @@ interface AudioPlayerUIProps {
   showEQBars?: boolean;
   showTimeline?: boolean;
   showTrackInfo?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -53,6 +55,7 @@ export function AudioPlayerUI({
   showEQBars = true,
   showTimeline = true,
   showTrackInfo = true,
+  onToggleFullscreen,
 }: AudioPlayerUIProps) {
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatEnabled, setRepeatEnabled] = useState(false);
@@ -298,6 +301,16 @@ export function AudioPlayerUI({
             <Volume2 className="w-4 h-4" />
           )}
         </button>
+
+        {onToggleFullscreen && (
+          <button
+            onClick={onToggleFullscreen}
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all ml-auto"
+            title="Vollbildmodus (F11)"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
