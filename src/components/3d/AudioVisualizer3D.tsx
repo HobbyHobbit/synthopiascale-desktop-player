@@ -183,7 +183,9 @@ export function AudioVisualizer3D({
     });
   }, [visibleTendrilCount]);
 
-  if (!isPlaying && frequencyDataRef.current.every((v) => v < 0.01)) return null;
+  // Always render when playing, fade out when stopped
+  const hasData = frequencyDataRef.current.some((v) => v > 0.01);
+  if (!isPlaying && !hasData) return null;
 
   return (
     <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>

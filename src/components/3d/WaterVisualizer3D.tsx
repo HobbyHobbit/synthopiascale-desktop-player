@@ -1,21 +1,21 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import {
+  hexToRgb,
+  getWaterColor,
+  getGoldenAngle,
+  goldenRandom,
+  createPulseState,
+  updatePulse,
+  PHI,
+} from './visualizerUtils';
 
 export interface WaterVisualizer3DProps {
   analyser: AnalyserNode | null;
   isPlaying: boolean;
   intensity: number;
   primaryColor: string;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16) / 255,
-    g: parseInt(result[2], 16) / 255,
-    b: parseInt(result[3], 16) / 255
-  } : { r: 0.4, g: 0.7, b: 1 };
 }
 
 // Create a circular bubble texture
@@ -25,16 +25,15 @@ function createBubbleTexture(): THREE.Texture {
   canvas.height = 64;
   const ctx = canvas.getContext('2d')!;
   
-  // Clear canvas
   ctx.clearRect(0, 0, 64, 64);
   
   // Draw bubble with gradient for 3D effect
   const gradient = ctx.createRadialGradient(28, 28, 0, 32, 32, 32);
   gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-  gradient.addColorStop(0.2, 'rgba(200, 230, 255, 0.7)');
-  gradient.addColorStop(0.5, 'rgba(150, 200, 255, 0.5)');
-  gradient.addColorStop(0.8, 'rgba(100, 180, 255, 0.3)');
-  gradient.addColorStop(1, 'rgba(80, 150, 255, 0)');
+  gradient.addColorStop(0.2, 'rgba(220, 240, 255, 0.7)');
+  gradient.addColorStop(0.5, 'rgba(180, 220, 255, 0.5)');
+  gradient.addColorStop(0.8, 'rgba(140, 200, 255, 0.3)');
+  gradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
   
   ctx.beginPath();
   ctx.arc(32, 32, 30, 0, Math.PI * 2);
@@ -64,10 +63,12 @@ interface Bubble {
   life: number;
   maxLife: number;
   angle: number;
+  seed: number;
   active: boolean;
 }
 
-const MAX_BUBBLES = 400;
+const MAX_BUBBLES = 500;
+const INNER_RADIUS = 0.12;
 
 export function WaterVisualizer3D({
   analyser,
@@ -78,10 +79,10 @@ export function WaterVisualizer3D({
   const pointsRef = useRef<THREE.Points>(null);
   const bubblesRef = useRef<Bubble[]>([]);
   const timeRef = useRef(0);
-  const audioIntensityRef = useRef(0);
+  const pulseRef = useRef(createPulseState());
 
-  // Bubble count scales with intensity setting (50 base + up to 350 more)
-  const activeBubbleCount = Math.floor(50 + globalIntensity * 350);
+  // Bubble count scales with intensity setting
+  const activeBubbleCount = Math.floor(60 + globalIntensity * 440);
 
   // Create bubble texture once
   const bubbleTexture = useMemo(() => createBubbleTexture(), []);
@@ -94,44 +95,49 @@ export function WaterVisualizer3D({
   }, []);
 
   useEffect(() => {
-    bubblesRef.current = Array.from({ length: MAX_BUBBLES }, () => createBubble(false));
+    bubblesRef.current = Array.from({ length: MAX_BUBBLES }, (_, i) => createBubble(i, false));
   }, []);
 
-  const createBubble = (active: boolean): Bubble => {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 0.06 + Math.random() * 0.04;
+  const createBubble = (index: number, active: boolean): Bubble => {
+    const angle = getGoldenAngle(index);
+    const seed = goldenRandom(index * 137);
     return {
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
-      z: -0.03 + Math.random() * 0.06,
+      x: Math.cos(angle) * INNER_RADIUS,
+      y: Math.sin(angle) * INNER_RADIUS,
+      z: -0.03 + seed * 0.06,
       vx: 0,
       vy: 0,
-      size: 0.02 + Math.random() * 0.03,
-      wobblePhase: Math.random() * Math.PI * 2,
-      wobbleSpeed: 3 + Math.random() * 4,
-      life: Math.random(),
-      maxLife: 1 + Math.random() * 1.5,
-      angle: angle,
-      active: active,
+      size: 0.015 + seed * 0.03,
+      wobblePhase: seed * Math.PI * 2,
+      wobbleSpeed: 2 + seed * 3,
+      life: seed,
+      maxLife: 0.8 + seed * 1.2,
+      angle,
+      seed,
+      active,
     };
   };
 
-  const resetBubble = (b: Bubble, audioIntensity: number) => {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 0.06 + Math.random() * 0.05;
-    const speed = 0.08 + audioIntensity * 0.2;
+  const resetBubble = (b: Bubble, index: number, pulseIntensity: number) => {
+    const angle = getGoldenAngle(index, timeRef.current * 0.3);
+    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 8));
     
-    b.x = Math.cos(angle) * radius;
-    b.y = Math.sin(angle) * radius;
-    b.z = -0.03 + Math.random() * 0.06;
-    b.vx = Math.cos(angle) * speed * (0.6 + Math.random() * 0.8);
-    b.vy = Math.sin(angle) * speed * (0.6 + Math.random() * 0.8);
-    b.size = 0.018 + Math.random() * 0.035 + audioIntensity * 0.02;
-    b.wobblePhase = Math.random() * Math.PI * 2;
-    b.wobbleSpeed = 3 + Math.random() * 4;
+    // Speed based on pulse (creates wave effect on beats)
+    const baseSpeed = 0.5 + pulseIntensity * 1.8;
+    const speedVariation = 0.5 + seed * 0.8;
+    
+    b.x = Math.cos(angle) * INNER_RADIUS;
+    b.y = Math.sin(angle) * INNER_RADIUS;
+    b.z = -0.03 + seed * 0.06;
+    b.vx = Math.cos(angle) * baseSpeed * speedVariation;
+    b.vy = Math.sin(angle) * baseSpeed * speedVariation;
+    b.size = 0.012 + seed * 0.028 + pulseIntensity * 0.015;
+    b.wobblePhase = seed * Math.PI * 2;
+    b.wobbleSpeed = 2 + seed * 3;
     b.life = 0;
-    b.maxLife = 0.8 + Math.random() * 1.2 + audioIntensity * 0.4;
+    b.maxLife = 0.6 + seed * 1.0 + pulseIntensity * 0.3;
     b.angle = angle;
+    b.seed = seed;
     b.active = true;
   };
 
@@ -139,8 +145,9 @@ export function WaterVisualizer3D({
     if (!pointsRef.current) return;
     
     timeRef.current += delta;
+    const time = timeRef.current;
 
-    // Get audio intensity
+    // Get audio intensity with pulse detection
     if (isPlaying && analyser) {
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
@@ -151,12 +158,12 @@ export function WaterVisualizer3D({
         sum += dataArray[i];
       }
       const targetIntensity = (sum / midRange / 255) * globalIntensity;
-      audioIntensityRef.current = audioIntensityRef.current * 0.85 + targetIntensity * 0.15;
+      updatePulse(pulseRef.current, targetIntensity, delta, time);
     } else {
-      audioIntensityRef.current *= 0.92;
+      pulseRef.current.current *= 0.92;
     }
 
-    const audioIntensity = audioIntensityRef.current;
+    const pulse = pulseRef.current;
     const baseColor = hexToRgb(primaryColor);
     const bubbles = bubblesRef.current;
 
@@ -164,13 +171,12 @@ export function WaterVisualizer3D({
       const b = bubbles[i];
       const shouldBeActive = i < activeBubbleCount;
       
-      // Update life
       b.life += delta;
       
-      // Reset dead bubbles or activate/deactivate based on count
+      // Reset dead bubbles with pulse-driven spawn rate
       if (b.life >= b.maxLife || (!b.active && shouldBeActive)) {
-        if ((audioIntensity > 0.03 || isPlaying) && shouldBeActive) {
-          resetBubble(b, audioIntensity);
+        if ((pulse.current > 0.02 || isPlaying) && shouldBeActive) {
+          resetBubble(b, i, pulse.current);
         } else {
           b.active = false;
           b.life = b.maxLife;
@@ -187,48 +193,45 @@ export function WaterVisualizer3D({
 
       const lifeRatio = b.life / b.maxLife;
       
-      // Bubble wobble motion (side to side)
-      const wobble = Math.sin(timeRef.current * b.wobbleSpeed + b.wobblePhase) * 0.02;
+      // Pulse-driven speed boost (creates wave ripple effect)
+      const pulseBoost = 1 + pulse.current * 1.2;
+      
+      // Golden ratio wobble for organic bubble motion
+      const wobblePhase = time * b.wobbleSpeed * PHI + b.wobblePhase;
+      const wobble = Math.sin(wobblePhase) * 0.03 * (1 - lifeRatio);
       const perpX = -Math.sin(b.angle);
       const perpY = Math.cos(b.angle);
       
-      // Move outward with wobble
-      const speedMod = 1 + audioIntensity * 0.3;
-      b.x += (b.vx + perpX * wobble) * delta * speedMod;
-      b.y += (b.vy + perpY * wobble) * delta * speedMod;
+      // Move outward with wobble - bubbles should reach MAX_OUTER_RADIUS
+      b.x += (b.vx + perpX * wobble) * delta * pulseBoost;
+      b.y += (b.vy + perpY * wobble) * delta * pulseBoost;
       
-      // Slight upward drift and z wobble
-      b.z += Math.sin(timeRef.current * 2 + i) * 0.005 * delta;
+      // Z wobble using golden ratio timing
+      b.z += Math.sin(time * PHI * 2 + i * PHI) * 0.008 * delta;
 
-      // Slow down over time (drag effect)
-      b.vx *= 0.995;
-      b.vy *= 0.995;
+      // Slight drag for floaty feel
+      b.vx *= 0.998;
+      b.vy *= 0.998;
 
-      // Update position buffer
       positions[i * 3] = b.x;
       positions[i * 3 + 1] = b.y;
       positions[i * 3 + 2] = b.z;
 
-      // Bubble color: blend primary with cyan/blue water tones
-      const fadeIn = Math.min(1, b.life * 5);
+      // Theme-aware water colors
+      const fadeIn = Math.min(1, b.life * 4);
       const fadeOut = 1 - Math.pow(lifeRatio, 2);
       const alpha = fadeIn * fadeOut;
+      const shimmer = 0.3 + Math.sin(time * 6 * PHI + i * 0.5) * 0.15;
       
-      // Shimmering highlight effect
-      const shimmer = 0.3 + Math.sin(timeRef.current * 8 + i * 0.7) * 0.15;
-      
-      // Water-like colors blended with primary
-      const r = Math.min(1, baseColor.r * 0.4 + 0.3 + shimmer * 0.3);
-      const g = Math.min(1, baseColor.g * 0.5 + 0.5 + shimmer * 0.2);
-      const bl = Math.min(1, baseColor.b * 0.3 + 0.7 + shimmer * 0.1);
+      const waterColor = getWaterColor(baseColor, pulse.current, shimmer, alpha);
+      colors[i * 3] = waterColor.r;
+      colors[i * 3 + 1] = waterColor.g;
+      colors[i * 3 + 2] = waterColor.b;
 
-      colors[i * 3] = r * alpha;
-      colors[i * 3 + 1] = g * alpha;
-      colors[i * 3 + 2] = bl * alpha;
-
-      // Bubbles grow slightly then shrink as they pop
+      // Bubbles grow then shrink, with pulse effect
       const sizePhase = Math.sin(lifeRatio * Math.PI);
-      sizes[i] = b.size * sizePhase * (0.7 + audioIntensity * 0.5);
+      const sizePulse = 1 + pulse.current * 0.4;
+      sizes[i] = b.size * sizePhase * sizePulse;
     }
 
     const geometry = pointsRef.current.geometry;
@@ -238,7 +241,7 @@ export function WaterVisualizer3D({
   });
 
   return (
-    <points ref={pointsRef} position={[0, 0, 0]}>
+    <points ref={pointsRef} position={[0, 0, -0.025]}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
@@ -260,7 +263,7 @@ export function WaterVisualizer3D({
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.08}
+        size={0.1}
         map={bubbleTexture}
         vertexColors
         transparent

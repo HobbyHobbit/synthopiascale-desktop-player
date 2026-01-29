@@ -1,21 +1,21 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import {
+  hexToRgb,
+  getFireColor,
+  getGoldenAngle,
+  goldenRandom,
+  createPulseState,
+  updatePulse,
+  PHI,
+} from './visualizerUtils';
 
 export interface FireVisualizer3DProps {
   analyser: AnalyserNode | null;
   isPlaying: boolean;
   intensity: number;
   primaryColor: string;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16) / 255,
-    g: parseInt(result[2], 16) / 255,
-    b: parseInt(result[3], 16) / 255
-  } : { r: 1, g: 0.6, b: 0.2 };
 }
 
 interface SparkParticle {
@@ -28,10 +28,12 @@ interface SparkParticle {
   maxLife: number;
   size: number;
   angle: number;
+  seed: number;
   active: boolean;
 }
 
 const MAX_PARTICLES = 800;
+const INNER_RADIUS = 0.12;
 
 export function FireVisualizer3D({
   analyser,
@@ -42,9 +44,10 @@ export function FireVisualizer3D({
   const pointsRef = useRef<THREE.Points>(null);
   const particlesRef = useRef<SparkParticle[]>([]);
   const timeRef = useRef(0);
+  const pulseRef = useRef(createPulseState());
   const audioIntensityRef = useRef(0);
 
-  // Particle count scales with intensity setting (100 base + up to 700 more)
+  // Particle count scales with intensity setting
   const activeParticleCount = Math.floor(100 + globalIntensity * 700);
 
   const { positions, colors, sizes } = useMemo(() => {
@@ -55,40 +58,45 @@ export function FireVisualizer3D({
   }, []);
 
   useEffect(() => {
-    particlesRef.current = Array.from({ length: MAX_PARTICLES }, () => createParticle(false));
+    particlesRef.current = Array.from({ length: MAX_PARTICLES }, (_, i) => createParticle(i, false));
   }, []);
 
-  const createParticle = (active: boolean): SparkParticle => {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 0.06 + Math.random() * 0.03;
+  const createParticle = (index: number, active: boolean): SparkParticle => {
+    const angle = getGoldenAngle(index);
+    const seed = goldenRandom(index * 137);
     return {
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
-      z: -0.01 + Math.random() * 0.02,
-      vx: (Math.random() - 0.5) * 0.01,
-      vy: (Math.random() - 0.5) * 0.01,
-      life: Math.random(),
-      maxLife: 0.2 + Math.random() * 0.4,
-      size: 0.003 + Math.random() * 0.008,
-      angle: angle,
-      active: active,
+      x: Math.cos(angle) * INNER_RADIUS,
+      y: Math.sin(angle) * INNER_RADIUS,
+      z: -0.02 + seed * 0.04,
+      vx: 0,
+      vy: 0,
+      life: seed,
+      maxLife: 0.3 + seed * 0.5,
+      size: 0.003 + seed * 0.008,
+      angle,
+      seed,
+      active,
     };
   };
 
-  const resetParticle = (p: SparkParticle, audioIntensity: number) => {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 0.06 + Math.random() * 0.04;
-    const speed = 0.2 + audioIntensity * 0.4;
+  const resetParticle = (p: SparkParticle, index: number, pulseIntensity: number) => {
+    const angle = getGoldenAngle(index, timeRef.current * 0.5);
+    const seed = goldenRandom(index * 137 + Math.floor(timeRef.current * 10));
     
-    p.x = Math.cos(angle) * radius;
-    p.y = Math.sin(angle) * radius;
-    p.z = -0.01 + Math.random() * 0.02;
-    p.vx = Math.cos(angle) * speed * (0.7 + Math.random() * 0.6);
-    p.vy = Math.sin(angle) * speed * (0.7 + Math.random() * 0.6);
+    // Speed based on pulse (creates burst effect on beats)
+    const baseSpeed = 0.8 + pulseIntensity * 2.5;
+    const speedVariation = 0.6 + seed * 0.8;
+    
+    p.x = Math.cos(angle) * INNER_RADIUS;
+    p.y = Math.sin(angle) * INNER_RADIUS;
+    p.z = -0.02 + seed * 0.04;
+    p.vx = Math.cos(angle) * baseSpeed * speedVariation;
+    p.vy = Math.sin(angle) * baseSpeed * speedVariation;
     p.life = 0;
-    p.maxLife = 0.15 + Math.random() * 0.35;
-    p.size = 0.002 + Math.random() * 0.006 + audioIntensity * 0.003;
+    p.maxLife = 0.2 + seed * 0.4 + pulseIntensity * 0.2;
+    p.size = 0.002 + seed * 0.006 + pulseIntensity * 0.004;
     p.angle = angle;
+    p.seed = seed;
     p.active = true;
   };
 
@@ -96,24 +104,27 @@ export function FireVisualizer3D({
     if (!pointsRef.current) return;
     
     timeRef.current += delta;
+    const time = timeRef.current;
 
-    // Get audio intensity
+    // Get audio intensity with pulse detection
     if (isPlaying && analyser) {
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
       
       let sum = 0;
-      const lowEnd = Math.floor(dataArray.length * 0.1);
+      const lowEnd = Math.floor(dataArray.length * 0.15);
       for (let i = 0; i < lowEnd; i++) {
         sum += dataArray[i];
       }
       const targetIntensity = (sum / lowEnd / 255) * globalIntensity;
-      audioIntensityRef.current = audioIntensityRef.current * 0.8 + targetIntensity * 0.2;
+      audioIntensityRef.current = targetIntensity;
+      updatePulse(pulseRef.current, targetIntensity, delta, time);
     } else {
-      audioIntensityRef.current *= 0.95;
+      audioIntensityRef.current *= 0.92;
+      pulseRef.current.current *= 0.92;
     }
 
-    const audioIntensity = audioIntensityRef.current;
+    const pulse = pulseRef.current;
     const baseColor = hexToRgb(primaryColor);
     const particles = particlesRef.current;
 
@@ -121,13 +132,12 @@ export function FireVisualizer3D({
       const p = particles[i];
       const shouldBeActive = i < activeParticleCount;
       
-      // Update life
       p.life += delta;
       
-      // Reset dead particles or activate/deactivate based on count
+      // Reset dead particles with pulse-driven spawn rate
       if (p.life >= p.maxLife || (!p.active && shouldBeActive)) {
-        if ((audioIntensity > 0.03 || isPlaying) && shouldBeActive) {
-          resetParticle(p, audioIntensity);
+        if ((pulse.current > 0.02 || isPlaying) && shouldBeActive) {
+          resetParticle(p, i, pulse.current);
         } else {
           p.active = false;
           p.life = p.maxLife;
@@ -144,38 +154,34 @@ export function FireVisualizer3D({
 
       const lifeRatio = p.life / p.maxLife;
       
-      // Move outward with flickering - faster for sparks
-      const flicker = Math.sin(timeRef.current * 20 + i * 0.3) * 0.4;
-      const speedMod = 1.2 + flicker * 0.3 + audioIntensity * 0.6;
+      // Pulse-driven speed boost
+      const pulseBoost = 1 + pulse.current * 1.5;
+      const flicker = Math.sin(time * 15 * PHI + i * 0.3) * 0.3;
+      const speedMod = pulseBoost * (1 + flicker * 0.2);
       
+      // Move outward - particles should reach MAX_OUTER_RADIUS
       p.x += p.vx * delta * speedMod;
       p.y += p.vy * delta * speedMod;
-      p.z += (Math.random() - 0.5) * 0.02 * delta;
+      p.z += (goldenRandom(i + Math.floor(time * 20)) - 0.5) * 0.03 * delta;
 
-      // Add turbulence for chaotic spark motion
-      p.vx += (Math.random() - 0.5) * 0.15 * delta;
-      p.vy += (Math.random() - 0.5) * 0.15 * delta;
+      // Golden ratio turbulence for organic motion
+      const turbPhase = time * 8 + i * PHI;
+      p.vx += Math.sin(turbPhase) * 0.08 * delta;
+      p.vy += Math.cos(turbPhase * PHI) * 0.08 * delta;
 
-      // Update position buffer
       positions[i * 3] = p.x;
       positions[i * 3 + 1] = p.y;
       positions[i * 3 + 2] = p.z;
 
-      // Spark color: bright white/yellow core -> orange -> red fade
-      const fadeOut = 1 - lifeRatio;
-      const coreGlow = Math.max(0, 1 - lifeRatio * 1.5);
-      
-      // Blend primary color with spark colors
-      const r = Math.min(1, baseColor.r * 0.4 + 0.6 + coreGlow * 0.4);
-      const g = Math.min(1, baseColor.g * 0.2 + coreGlow * 0.9 - lifeRatio * 0.4);
-      const b = Math.min(1, baseColor.b * 0.1 + coreGlow * 0.4 - lifeRatio * 0.6);
+      // Theme-aware fire colors
+      const fireColor = getFireColor(baseColor, pulse.current, lifeRatio);
+      colors[i * 3] = fireColor.r;
+      colors[i * 3 + 1] = fireColor.g;
+      colors[i * 3 + 2] = fireColor.b;
 
-      colors[i * 3] = r * fadeOut;
-      colors[i * 3 + 1] = Math.max(0, g) * fadeOut;
-      colors[i * 3 + 2] = Math.max(0, b) * fadeOut;
-
-      // Small sparks that fade quickly
-      sizes[i] = p.size * (1 - lifeRatio * 0.8) * (0.7 + audioIntensity * 0.4);
+      // Size pulses with audio
+      const sizePulse = 1 + pulse.current * 0.5;
+      sizes[i] = p.size * (1 - lifeRatio * 0.7) * sizePulse;
     }
 
     const geometry = pointsRef.current.geometry;
@@ -185,7 +191,7 @@ export function FireVisualizer3D({
   });
 
   return (
-    <points ref={pointsRef} position={[0, 0, 0]}>
+    <points ref={pointsRef} position={[0, 0, -0.025]}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
@@ -207,7 +213,7 @@ export function FireVisualizer3D({
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.015}
+        size={0.02}
         vertexColors
         transparent
         opacity={0.95}
