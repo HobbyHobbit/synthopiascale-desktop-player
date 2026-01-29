@@ -8,12 +8,13 @@ import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { LibraryPanel } from './components/LibraryPanel';
 import { NowPlayingBar } from './components/NowPlayingBar';
 import { HelpOverlay } from './components/HelpOverlay';
+import { EQPanel } from './components/EQPanel';
 import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useBPMDetector } from './hooks/useBPMDetector';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -49,6 +50,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showEQ, setShowEQ] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
   const [studioMode, setStudioMode] = useState(false); // Full visualizer mode
@@ -262,6 +264,13 @@ function App() {
             <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
           </button>
           <button
+            onClick={() => setShowEQ(prev => !prev)}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showEQ ? 'bg-gold/20' : ''}`}
+            title="Equalizer (E)"
+          >
+            <Sliders className={`w-5 h-5 ${showEQ ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+          </button>
+          <button
             onClick={toggleUIVisibility}
             className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
             title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
@@ -346,6 +355,9 @@ function App() {
 
       {/* Help Overlay */}
       <HelpOverlay visible={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* EQ Panel */}
+      <EQPanel visible={showEQ} onClose={() => setShowEQ(false)} />
 
       {/* Studio Mode Indicator - minimal branding */}
       {studioMode && !transparentMode && (

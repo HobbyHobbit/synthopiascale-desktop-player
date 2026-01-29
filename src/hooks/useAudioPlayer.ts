@@ -34,6 +34,9 @@ interface UseAudioPlayerReturn extends AudioPlayerState {
   setAudioMode: (mode: 'internal' | 'system') => void;
   audioElement: HTMLAudioElement | null;
   queueLength: number;
+  // For EQ integration
+  audioContext: AudioContext | null;
+  sourceNode: MediaElementAudioSourceNode | null;
 }
 
 export function useAudioPlayer(): UseAudioPlayerReturn {
@@ -326,5 +329,7 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     setAudioMode,
     audioElement: audioRef.current,
     queueLength,
+    audioContext: audioContextRef.current,
+    sourceNode: sourceRef.current,
   };
 }
