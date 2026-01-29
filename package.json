@@ -2,7 +2,6 @@
   "name": "synthopiascale-desktop-player",
   "productName": "SynthopiaScale Desktop Player",
   "version": "1.0.0",
-  "type": "module",
   "description": "Premium audio player and visualizer by SynthopiaScale Records with 3D visualization, 10-band EQ, theme system, and library management",
   "main": "dist/electron/main.js",
   "author": {
@@ -25,6 +24,9 @@
     "dist:dir": "npm run build && electron-builder --win --dir",
     "package": "npm run dist",
     "postinstall": "electron-builder install-app-deps"
+  },
+  "electronDownload": {
+    "mirror": "https://npmmirror.com/mirrors/electron/"
   },
   "dependencies": {
     "@react-three/drei": "^9.92.7",
@@ -81,7 +83,8 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
