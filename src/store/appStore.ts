@@ -163,3 +163,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCurrentDisplay: (index) => set({ currentDisplay: index }),
   setIsRecording: (recording) => set({ isRecording: recording }),
 }));
+
+// Selectors for performance optimization - use these to prevent unnecessary re-renders
+export const selectSettings = (state: AppState) => state.settings;
+export const selectQuality = (state: AppState) => state.settings.quality;
+export const selectPrimaryColor = (state: AppState) => state.settings.primaryColor;
+export const selectIntensity = (state: AppState) => state.settings.intensity;
+export const selectVisualizerType = (state: AppState) => state.settings.visualizerType;
+export const selectPlasmaEnabled = (state: AppState) => state.settings.plasmaEnabled;
+export const selectParticlesEnabled = (state: AppState) => state.settings.particlesEnabled;
+export const selectRotationEnabled = (state: AppState) => state.settings.rotationEnabled;
+export const selectShowGlassCard = (state: AppState) => state.settings.showGlassCard;
+export const selectShowBranding = (state: AppState) => state.settings.showBranding;
+export const selectShowEQBars = (state: AppState) => state.settings.showEQBars;
+export const selectIsRecording = (state: AppState) => state.isRecording;

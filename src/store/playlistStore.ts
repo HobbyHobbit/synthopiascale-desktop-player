@@ -510,3 +510,13 @@ export const usePlaylistStore = create<PlaylistState>()(
     }
   )
 );
+
+// Selectors for performance optimization
+export const selectQueue = (state: PlaylistState) => state.queue;
+export const selectQueueIndex = (state: PlaylistState) => state.queueIndex;
+export const selectLibrary = (state: PlaylistState) => state.library;
+export const selectPlaylists = (state: PlaylistState) => state.playlists;
+export const selectRepeatMode = (state: PlaylistState) => state.repeatMode;
+export const selectShuffleEnabled = (state: PlaylistState) => state.shuffleEnabled;
+export const selectVolume = (state: PlaylistState) => state.volume;
+export const selectMuted = (state: PlaylistState) => state.muted;
