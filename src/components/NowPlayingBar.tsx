@@ -12,6 +12,7 @@ import {
   Volume1,
   ListMusic,
   Maximize2,
+  FolderOpen,
 } from 'lucide-react';
 import { usePlaylistStore, RepeatMode } from '../store/playlistStore';
 
@@ -22,6 +23,7 @@ interface TrackInfo {
   bpm?: number;
   key?: string;
   source?: 'local' | 'stream' | 'builtin';
+  src?: string;
 }
 
 interface NowPlayingBarProps {
@@ -205,6 +207,21 @@ export function NowPlayingBar({
                   </div>
                 )}
               </div>
+              {/* Show in folder button */}
+              {trackInfo.src && trackInfo.source === 'local' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.electronAPI && trackInfo.src) {
+                      window.electronAPI.showItemInFolder(trackInfo.src);
+                    }
+                  }}
+                  className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-white/70 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors"
+                >
+                  <FolderOpen className="w-3 h-3" />
+                  Im Ordner anzeigen
+                </button>
+              )}
             </div>
           )}
         </div>

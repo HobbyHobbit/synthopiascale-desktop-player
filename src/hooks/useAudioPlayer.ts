@@ -9,6 +9,7 @@ export interface AudioTrack {
   src: string;
   duration: number;
   bpm?: number;
+  source?: 'local' | 'stream' | 'builtin';
 }
 
 interface AudioPlayerState {

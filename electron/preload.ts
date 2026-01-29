@@ -33,10 +33,12 @@ export interface ElectronAPI {
   getDesktopSources: () => Promise<DesktopSource[]>;
   openFiles: () => Promise<AudioFileInfo[] | null>;
   openFolder: () => Promise<AudioFileInfo[] | null>;
+  showItemInFolder: (filePath: string) => Promise<void>;
   onToggleTransparentMode: (callback: () => void) => void;
   onOpenSettings: (callback: () => void) => void;
   onUpdateAvailable: (callback: () => void) => void;
   onUpdateDownloaded: (callback: () => void) => void;
+  onOpenFilesFromSystem: (callback: (files: AudioFileInfo[]) => void) => void;
 }
 
 const electronAPI: ElectronAPI = {
@@ -54,6 +56,7 @@ const electronAPI: ElectronAPI = {
   getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
   openFiles: () => ipcRenderer.invoke('open-files'),
   openFolder: () => ipcRenderer.invoke('open-folder'),
+  showItemInFolder: (filePath: string) => ipcRenderer.invoke('show-item-in-folder', filePath),
   onToggleTransparentMode: (callback: () => void) => {
     ipcRenderer.on('toggle-transparent-mode', callback);
   },
@@ -65,6 +68,9 @@ const electronAPI: ElectronAPI = {
   },
   onUpdateDownloaded: (callback: () => void) => {
     ipcRenderer.on('update-downloaded', callback);
+  },
+  onOpenFilesFromSystem: (callback: (files: AudioFileInfo[]) => void) => {
+    ipcRenderer.on('open-files-from-system', (_event, files) => callback(files));
   },
 };
 

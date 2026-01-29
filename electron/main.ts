@@ -9,8 +9,32 @@ const store = new Store();
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let pendingFilesToOpen: string[] = [];
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// Supported audio extensions
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac', 'wma', 'aiff'];
+
+// Filter valid audio files from arguments
+function getAudioFilesFromArgs(args: string[]): string[] {
+  return args.filter(arg => {
+    if (arg.startsWith('-') || arg.startsWith('--')) return false;
+    const ext = path.extname(arg).toLowerCase().slice(1);
+    return AUDIO_EXTENSIONS.includes(ext) && fs.existsSync(arg);
+  });
+}
+
+// Send files to renderer
+function sendFilesToRenderer(files: string[]): void {
+  if (files.length > 0 && mainWindow) {
+    const audioFiles = files.map(filePath => ({
+      path: filePath,
+      name: path.basename(filePath),
+    }));
+    mainWindow.webContents.send('open-files-from-system', audioFiles);
+  }
+}
 
 // Single instance lock - prevents multiple instances and helps with clean install/updates
 const gotTheLock = app.requestSingleInstanceLock();
@@ -19,12 +43,16 @@ if (!gotTheLock) {
   // Another instance is running, quit immediately
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    // Someone tried to run a second instance, focus the existing window
+  app.on('second-instance', (_event, commandLine) => {
+    // Someone tried to run a second instance with files, handle them
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.show();
       mainWindow.focus();
+      
+      // Check for audio files in command line
+      const files = getAudioFilesFromArgs(commandLine);
+      sendFilesToRenderer(files);
     }
   });
 }
@@ -112,6 +140,23 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+    
+    // Handle files passed via command line on first launch
+    const filesFromArgs = getAudioFilesFromArgs(process.argv);
+    if (filesFromArgs.length > 0) {
+      pendingFilesToOpen = filesFromArgs;
+    }
+  });
+  
+  // Send pending files after renderer is ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingFilesToOpen.length > 0) {
+      // Small delay to ensure React is mounted
+      setTimeout(() => {
+        sendFilesToRenderer(pendingFilesToOpen);
+        pendingFilesToOpen = [];
+      }, 500);
+    }
   });
 
   mainWindow.on('close', () => {
@@ -274,8 +319,12 @@ ipcMain.handle('get-desktop-sources', async () => {
   }));
 });
 
-// Audio file extensions
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac', 'wma', 'aiff'];
+// Show file in folder (Explorer)
+ipcMain.handle('show-item-in-folder', (_, filePath: string) => {
+  if (filePath && fs.existsSync(filePath)) {
+    shell.showItemInFolder(filePath);
+  }
+});
 
 ipcMain.handle('open-files', async () => {
   if (!mainWindow) return null;

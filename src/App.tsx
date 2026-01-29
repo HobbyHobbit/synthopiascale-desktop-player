@@ -37,10 +37,12 @@ declare global {
       installUpdate: () => Promise<void>;
       openFiles: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
       openFolder: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
+      showItemInFolder: (filePath: string) => Promise<void>;
       onToggleTransparentMode: (callback: () => void) => void;
       onOpenSettings: (callback: () => void) => void;
       onUpdateAvailable: (callback: () => void) => void;
       onUpdateDownloaded: (callback: () => void) => void;
+      onOpenFilesFromSystem: (callback: (files: Array<{ path: string; name: string }>) => void) => void;
     };
   }
 }
@@ -123,6 +125,35 @@ function App() {
     });
   }, [settings.showGlassCard, setSettings]);
 
+  // Handle files opened from system (Open With)
+  const handleFilesFromSystem = useCallback((files: Array<{ path: string; name: string }>) => {
+    if (files.length === 0) return;
+    
+    const { addToLibrary, setQueue } = usePlaylistStore.getState();
+    const trackIds: string[] = [];
+    
+    files.forEach(file => {
+      const title = file.name.replace(/\.[^/.]+$/, '');
+      const id = addToLibrary({
+        title,
+        artist: 'Unknown Artist',
+        src: file.path,
+        duration: 0,
+        source: 'local',
+      });
+      trackIds.push(id);
+    });
+    
+    // Set queue and start playing
+    if (trackIds.length > 0) {
+      setQueue(trackIds, 0);
+      // Small delay to ensure queue is set before playing
+      setTimeout(() => {
+        playTrackById(trackIds[0]);
+      }, 100);
+    }
+  }, [playTrackById]);
+
   useEffect(() => {
     loadSettings();
 
@@ -133,8 +164,11 @@ function App() {
       
       // Get initial fullscreen state
       window.electronAPI.getFullscreen().then(setIsFullscreen);
+      
+      // Listen for files opened via "Open With" from system
+      window.electronAPI.onOpenFilesFromSystem(handleFilesFromSystem);
     }
-  }, [loadSettings]);
+  }, [loadSettings, handleFilesFromSystem]);
 
   const toggleFullscreen = useCallback(async () => {
     if (window.electronAPI) {
@@ -195,7 +229,8 @@ function App() {
     title: currentTrack.title,
     artist: currentTrack.artist,
     duration: duration || currentTrack.duration,
-    source: 'builtin' as const,
+    source: currentTrack.source || 'builtin' as const,
+    src: currentTrack.src,
   } : null;
 
   return (
