@@ -32,6 +32,7 @@ export interface Settings {
 const PERFORMANCE_MODE_DISABLED_SETTINGS: (keyof Settings)[] = [
   'particlesEnabled',
   'particleHoverEnabled',
+  'plasmaEnabled',
   'rotationEnabled',
   'showGlassCard',
   'showBranding',
@@ -109,6 +110,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         quality: 'low',
         particlesEnabled: false,
         particleHoverEnabled: false,
+        plasmaEnabled: false,
         rotationEnabled: false,
         showGlassCard: false,
         showBranding: false,

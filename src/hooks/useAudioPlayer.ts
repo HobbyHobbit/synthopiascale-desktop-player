@@ -324,15 +324,23 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     if (index !== -1) {
       setQueueIndex(index);
       setCurrentTime(0);
-      // Auto-play when selecting a track
+      // Auto-play when selecting a track - use proper play function to setup AudioContext
       setTimeout(() => {
         if (audioRef.current) {
+          // Setup audio context on first play (requires user interaction)
+          if (!audioContextRef.current) {
+            setupAudioContext();
+          }
+          // Resume audio context if suspended
+          if (audioContextRef.current?.state === 'suspended') {
+            audioContextRef.current.resume();
+          }
           audioRef.current.play().catch(console.error);
           setIsPlaying(true);
         }
       }, 100);
     }
-  }, [queue, setQueueIndex]);
+  }, [queue, setQueueIndex, setupAudioContext]);
 
   const setAudioMode = useCallback((mode: 'internal' | 'system') => {
     setAudioModeState(mode);
