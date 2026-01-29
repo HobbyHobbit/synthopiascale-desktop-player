@@ -199,7 +199,7 @@ export function ParticleBackground({ enabled = true, primaryColor = '#d4af37', h
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [enabled, initParticles]);
+  }, [enabled, initParticles, hoverEnabled, primaryColor]);
 
   if (!enabled) return null;
 

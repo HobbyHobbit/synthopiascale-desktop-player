@@ -1,7 +1,6 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Group } from 'three';
-import { Line } from '@react-three/drei';
+import * as THREE from 'three';
 
 export interface FireVisualizer3DProps {
   analyser: AnalyserNode | null;
@@ -10,98 +9,28 @@ export interface FireVisualizer3DProps {
   primaryColor: string;
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed * 9999) * 10000;
-  return x - Math.floor(x);
-}
-
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : { r: 255, g: 100, b: 50 };
+    r: parseInt(result[1], 16) / 255,
+    g: parseInt(result[2], 16) / 255,
+    b: parseInt(result[3], 16) / 255
+  } : { r: 1, g: 0.6, b: 0.2 };
 }
 
-function getFireColor(intensity: number, seed: number, primaryColor: string): string {
-  const base = hexToRgb(primaryColor);
-  const randomFactor = 0.85 + seededRandom(seed) * 0.3;
-  const effectiveIntensity = Math.min(1, intensity * randomFactor);
-
-  // Fire colors: yellow-orange at base, red-orange at tips
-  const fireProgress = effectiveIntensity;
-  
-  // Blend primary color with fire tones
-  const r = Math.min(255, Math.round(base.r * 0.8 + 50 + fireProgress * 50));
-  const g = Math.round(base.g * 0.5 * (1 - fireProgress * 0.5));
-  const b = Math.round(base.b * 0.2 * (1 - fireProgress * 0.7));
-
-  return `rgb(${r}, ${g}, ${b})`;
+interface FlameParticle {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  angle: number;
 }
 
-function generateFlameShape(
-  angle: number,
-  length: number,
-  intensity: number,
-  time: number,
-  seed: number
-): [number, number, number][] {
-  const points: [number, number, number][] = [[0, 0, 0]];
-  
-  // More segments for organic flame shape
-  const segments = 10 + Math.floor(intensity * 8);
-  
-  // Flame flicker and sway
-  const flickerSpeed = 4 + seededRandom(seed) * 3;
-  const swayAmount = 0.2 + intensity * 0.15;
-  const sway = Math.sin(time * flickerSpeed + seed) * swayAmount;
-  const effectiveAngle = angle + sway;
-  
-  const cosA = Math.cos(effectiveAngle);
-  const sinA = Math.sin(effectiveAngle);
-  
-  const perpX = -sinA;
-  const perpY = cosA;
-  
-  for (let i = 1; i < segments; i++) {
-    const t = i / segments;
-    
-    // Flame tapers towards tip - wider at base
-    const widthTaper = Math.sin(t * Math.PI) * (1 - t * 0.3);
-    
-    // Base position with curve
-    const curveOffset = Math.sin(t * Math.PI * 1.5) * 0.1 * intensity;
-    const baseX = cosA * length * t + perpX * curveOffset;
-    const baseY = sinA * length * t + perpY * curveOffset;
-    
-    // Organic flickering movement
-    const flicker1 = Math.sin(time * 6 + i * 1.5 + seed * 0.3) * 0.08;
-    const flicker2 = Math.cos(time * 9 + i * 2.2 + seed) * 0.05;
-    const flicker3 = Math.sin(time * 15 + i * 3) * 0.03 * intensity;
-    
-    const noise = (flicker1 + flicker2 + flicker3) * widthTaper;
-    
-    // Z variation for 3D depth
-    const zWave = Math.sin(time * 5 + i * 1.2 + seed) * 0.02 * widthTaper;
-    
-    points.push([
-      baseX + perpX * noise * 0.15,
-      baseY + perpY * noise * 0.15,
-      zWave
-    ]);
-  }
-  
-  // Flame tip with flicker
-  const tipFlicker = Math.sin(time * 12 + seed) * 0.03;
-  points.push([
-    cosA * length + perpX * tipFlicker,
-    sinA * length + perpY * tipFlicker,
-    0
-  ]);
-  
-  return points;
-}
+const PARTICLE_COUNT = 200;
 
 export function FireVisualizer3D({
   analyser,
@@ -109,84 +38,167 @@ export function FireVisualizer3D({
   intensity: globalIntensity,
   primaryColor,
 }: FireVisualizer3DProps) {
-  const groupRef = useRef<Group>(null);
+  const pointsRef = useRef<THREE.Points>(null);
+  const particlesRef = useRef<FlameParticle[]>([]);
   const timeRef = useRef(0);
-  const frequencyDataRef = useRef<number[]>([]);
-  const [renderKey, setRenderKey] = useState(0);
+  const audioIntensityRef = useRef(0);
 
-  const baseFlameCount = 72;
-  const visibleFlameCount = Math.max(12, Math.floor(baseFlameCount * globalIntensity));
-  const innerRadius = 0.12;
-  const maxOuterRadius = 0.95;
-
-  useEffect(() => {
-    frequencyDataRef.current = new Array(baseFlameCount).fill(0);
+  const { positions, colors, sizes } = useMemo(() => {
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
+    const sizes = new Float32Array(PARTICLE_COUNT);
+    return { positions, colors, sizes };
   }, []);
 
+  useEffect(() => {
+    particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => createParticle());
+  }, []);
+
+  const createParticle = (): FlameParticle => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 0.08 + Math.random() * 0.04;
+    return {
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
+      z: -0.02 + Math.random() * 0.04,
+      vx: (Math.random() - 0.5) * 0.02,
+      vy: (Math.random() - 0.5) * 0.02,
+      life: Math.random(),
+      maxLife: 0.5 + Math.random() * 0.8,
+      size: 0.03 + Math.random() * 0.04,
+      angle: angle,
+    };
+  };
+
+  const resetParticle = (p: FlameParticle, audioIntensity: number) => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 0.08 + Math.random() * 0.06;
+    const speed = 0.15 + audioIntensity * 0.25;
+    
+    p.x = Math.cos(angle) * radius;
+    p.y = Math.sin(angle) * radius;
+    p.z = -0.02 + Math.random() * 0.04;
+    p.vx = Math.cos(angle) * speed * (0.8 + Math.random() * 0.4);
+    p.vy = Math.sin(angle) * speed * (0.8 + Math.random() * 0.4);
+    p.life = 0;
+    p.maxLife = 0.4 + Math.random() * 0.6 + audioIntensity * 0.3;
+    p.size = 0.025 + Math.random() * 0.035 + audioIntensity * 0.02;
+    p.angle = angle;
+  };
+
   useFrame((_, delta) => {
+    if (!pointsRef.current) return;
+    
     timeRef.current += delta;
 
-    if (!isPlaying || !analyser) {
-      let hasValue = false;
-      for (let i = 0; i < frequencyDataRef.current.length; i++) {
-        frequencyDataRef.current[i] *= 0.92;
-        if (frequencyDataRef.current[i] > 0.01) hasValue = true;
+    // Get audio intensity
+    if (isPlaying && analyser) {
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      
+      let sum = 0;
+      const lowEnd = Math.floor(dataArray.length * 0.1);
+      for (let i = 0; i < lowEnd; i++) {
+        sum += dataArray[i];
       }
-      if (!hasValue && frequencyDataRef.current.some((v) => v > 0)) {
-        setRenderKey((n) => n + 1);
-      }
-      return;
+      const targetIntensity = (sum / lowEnd / 255) * globalIntensity;
+      audioIntensityRef.current = audioIntensityRef.current * 0.8 + targetIntensity * 0.2;
+    } else {
+      audioIntensityRef.current *= 0.95;
     }
 
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
+    const audioIntensity = audioIntensityRef.current;
+    const baseColor = hexToRgb(primaryColor);
+    const particles = particlesRef.current;
 
-    const binResolution = 22050 / dataArray.length;
-    const lowBin = Math.floor(60 / binResolution);
-    const highBin = Math.floor(500 / binResolution);
-    const binRange = highBin - lowBin;
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const p = particles[i];
+      
+      // Update life
+      p.life += delta;
+      
+      // Reset dead particles
+      if (p.life >= p.maxLife) {
+        if (audioIntensity > 0.05 || isPlaying) {
+          resetParticle(p, audioIntensity);
+        } else {
+          p.life = p.maxLife;
+        }
+      }
 
-    for (let i = 0; i < baseFlameCount; i++) {
-      const binIndex = lowBin + Math.floor((i / baseFlameCount) * binRange);
-      const rawValue = (dataArray[binIndex] ?? 0) / 255;
-      const threshold = 0.2 + seededRandom(i * 31) * 0.15;
-      const value = rawValue > threshold ? (rawValue - threshold) / (1 - threshold) : 0;
-      const decay = value > frequencyDataRef.current[i] ? 0.4 : 0.75;
-      frequencyDataRef.current[i] = frequencyDataRef.current[i] * decay + value * (1 - decay);
+      const lifeRatio = p.life / p.maxLife;
+      
+      // Move outward with flickering
+      const flicker = Math.sin(timeRef.current * 15 + i * 0.5) * 0.3;
+      const speedMod = 1 + flicker * 0.2 + audioIntensity * 0.5;
+      
+      p.x += p.vx * delta * speedMod;
+      p.y += p.vy * delta * speedMod;
+      p.z += (Math.random() - 0.5) * 0.01 * delta;
+
+      // Add turbulence
+      p.vx += (Math.random() - 0.5) * 0.1 * delta;
+      p.vy += (Math.random() - 0.5) * 0.1 * delta;
+
+      // Update position buffer
+      positions[i * 3] = p.x;
+      positions[i * 3 + 1] = p.y;
+      positions[i * 3 + 2] = p.z;
+
+      // Fire color gradient: white/yellow core -> orange -> red -> dark at edges
+      const fadeOut = 1 - lifeRatio;
+      const coreGlow = Math.max(0, 1 - lifeRatio * 2);
+      
+      // Blend primary color with fire colors
+      const r = Math.min(1, baseColor.r * 0.5 + 0.5 + coreGlow * 0.5);
+      const g = Math.min(1, baseColor.g * 0.3 + coreGlow * 0.8 - lifeRatio * 0.3);
+      const b = Math.min(1, baseColor.b * 0.1 + coreGlow * 0.3 - lifeRatio * 0.5);
+
+      colors[i * 3] = r * fadeOut;
+      colors[i * 3 + 1] = Math.max(0, g) * fadeOut;
+      colors[i * 3 + 2] = Math.max(0, b) * fadeOut;
+
+      // Size shrinks as particle ages
+      sizes[i] = p.size * (1 - lifeRatio * 0.7) * (0.8 + audioIntensity * 0.5);
     }
 
-    setRenderKey((n) => n + 1);
+    const geometry = pointsRef.current.geometry;
+    geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.color.needsUpdate = true;
+    geometry.attributes.size.needsUpdate = true;
   });
 
-  const flames = useMemo(() => {
-    return Array.from({ length: visibleFlameCount }, (_, i) => ({
-      angle: (i / visibleFlameCount) * Math.PI * 2 - Math.PI / 2,
-      dataIndex: i % baseFlameCount,
-      colorIndex: i,
-    }));
-  }, [visibleFlameCount]);
-
-  if (!isPlaying && frequencyDataRef.current.every((v) => v < 0.01)) return null;
-
   return (
-    <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>
-      {flames.map((f, i) => {
-        const intensity = frequencyDataRef.current[f.dataIndex] || 0;
-        if (intensity < 0.1) return null;
-
-        const length = innerRadius + intensity * (maxOuterRadius - innerRadius);
-        const color = getFireColor(intensity, f.colorIndex * 137, primaryColor);
-        const points = generateFlameShape(f.angle, length, intensity, timeRef.current, f.colorIndex * 137);
-
-        return (
-          <Line
-            key={i}
-            points={points}
-            color={color}
-            lineWidth={0.5 + intensity * 0.4}
-          />
-        );
-      })}
-    </group>
+    <points ref={pointsRef} position={[0, 0, 0]}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={PARTICLE_COUNT}
+          array={positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={PARTICLE_COUNT}
+          array={colors}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-size"
+          count={PARTICLE_COUNT}
+          array={sizes}
+          itemSize={1}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.08}
+        vertexColors
+        transparent
+        opacity={0.9}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
   );
 }

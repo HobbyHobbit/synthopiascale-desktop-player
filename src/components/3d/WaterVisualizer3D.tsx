@@ -1,7 +1,6 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Group } from 'three';
-import { Line } from '@react-three/drei';
+import * as THREE from 'three';
 
 export interface WaterVisualizer3DProps {
   analyser: AnalyserNode | null;
@@ -10,99 +9,30 @@ export interface WaterVisualizer3DProps {
   primaryColor: string;
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed * 9999) * 10000;
-  return x - Math.floor(x);
-}
-
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : { r: 100, g: 150, b: 255 };
+    r: parseInt(result[1], 16) / 255,
+    g: parseInt(result[2], 16) / 255,
+    b: parseInt(result[3], 16) / 255
+  } : { r: 0.4, g: 0.7, b: 1 };
 }
 
-function getWaterColor(intensity: number, seed: number, primaryColor: string): string {
-  const base = hexToRgb(primaryColor);
-  const randomFactor = 0.9 + seededRandom(seed) * 0.2;
-  const effectiveIntensity = Math.min(1, intensity * randomFactor);
-
-  // Water colors: blend with blue/cyan tones
-  const waterBlend = effectiveIntensity;
-  
-  // Add blue/cyan tint for water effect
-  const r = Math.round(base.r * 0.6 + 100 * (1 - waterBlend));
-  const g = Math.round(base.g * 0.7 + 180 * waterBlend);
-  const b = Math.min(255, Math.round(base.b * 0.8 + 200 + waterBlend * 55));
-
-  return `rgb(${r}, ${g}, ${b})`;
+interface Bubble {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  size: number;
+  wobblePhase: number;
+  wobbleSpeed: number;
+  life: number;
+  maxLife: number;
+  angle: number;
 }
 
-function generateSplashPath(
-  angle: number,
-  length: number,
-  intensity: number,
-  time: number,
-  seed: number
-): [number, number, number][] {
-  const points: [number, number, number][] = [[0, 0, 0]];
-  
-  // Splash segments - more for fluid motion
-  const segments = 8 + Math.floor(intensity * 6);
-  
-  // Water splash arc and spray
-  const splashSpeed = 2 + seededRandom(seed) * 2;
-  const arcAmount = 0.3 + intensity * 0.2;
-  const arc = Math.sin(time * splashSpeed + seed * 0.5) * arcAmount * 0.3;
-  const effectiveAngle = angle + arc;
-  
-  const cosA = Math.cos(effectiveAngle);
-  const sinA = Math.sin(effectiveAngle);
-  
-  const perpX = -sinA;
-  const perpY = cosA;
-  
-  for (let i = 1; i < segments; i++) {
-    const t = i / segments;
-    
-    // Splash trajectory - rises then falls (parabolic)
-    const gravity = t * t * 0.15 * intensity;
-    
-    // Base position along splash arc
-    const baseX = cosA * length * t;
-    const baseY = sinA * length * t - gravity;
-    
-    // Spray effect - multiple droplet simulation
-    const spray1 = Math.sin(time * 8 + i * 2.5 + seed) * 0.06 * (1 - t);
-    const spray2 = Math.cos(time * 12 + i * 1.8 + seed * 0.7) * 0.04 * (1 - t * 0.5);
-    const ripple = Math.sin(time * 6 + i * 3 + seed) * 0.03 * intensity;
-    
-    // Combine spray effects
-    const noise = (spray1 + spray2 + ripple);
-    
-    // Z variation for 3D splash depth
-    const zSpray = Math.sin(time * 7 + i * 2 + seed) * 0.04 * (1 - t);
-    
-    points.push([
-      baseX + perpX * noise * 0.2,
-      baseY + perpY * noise * 0.2,
-      zSpray
-    ]);
-  }
-  
-  // Splash tip - slight spray
-  const tipSpray = Math.sin(time * 10 + seed) * 0.02;
-  const gravity = 0.1 * intensity;
-  points.push([
-    cosA * length + perpX * tipSpray,
-    sinA * length - gravity + perpY * tipSpray,
-    0
-  ]);
-  
-  return points;
-}
+const BUBBLE_COUNT = 150;
 
 export function WaterVisualizer3D({
   analyser,
@@ -110,85 +40,181 @@ export function WaterVisualizer3D({
   intensity: globalIntensity,
   primaryColor,
 }: WaterVisualizer3DProps) {
-  const groupRef = useRef<Group>(null);
+  const pointsRef = useRef<THREE.Points>(null);
+  const bubblesRef = useRef<Bubble[]>([]);
   const timeRef = useRef(0);
-  const frequencyDataRef = useRef<number[]>([]);
-  const [renderKey, setRenderKey] = useState(0);
+  const audioIntensityRef = useRef(0);
 
-  const baseSplashCount = 72;
-  const visibleSplashCount = Math.max(12, Math.floor(baseSplashCount * globalIntensity));
-  const innerRadius = 0.12;
-  const maxOuterRadius = 0.9;
-
-  useEffect(() => {
-    frequencyDataRef.current = new Array(baseSplashCount).fill(0);
+  const { positions, colors, sizes } = useMemo(() => {
+    const positions = new Float32Array(BUBBLE_COUNT * 3);
+    const colors = new Float32Array(BUBBLE_COUNT * 3);
+    const sizes = new Float32Array(BUBBLE_COUNT);
+    return { positions, colors, sizes };
   }, []);
 
+  useEffect(() => {
+    bubblesRef.current = Array.from({ length: BUBBLE_COUNT }, () => createBubble());
+  }, []);
+
+  const createBubble = (): Bubble => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 0.06 + Math.random() * 0.04;
+    return {
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
+      z: -0.03 + Math.random() * 0.06,
+      vx: 0,
+      vy: 0,
+      size: 0.015 + Math.random() * 0.025,
+      wobblePhase: Math.random() * Math.PI * 2,
+      wobbleSpeed: 3 + Math.random() * 4,
+      life: Math.random(),
+      maxLife: 1 + Math.random() * 1.5,
+      angle: angle,
+    };
+  };
+
+  const resetBubble = (b: Bubble, audioIntensity: number) => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 0.06 + Math.random() * 0.05;
+    const speed = 0.08 + audioIntensity * 0.2;
+    
+    b.x = Math.cos(angle) * radius;
+    b.y = Math.sin(angle) * radius;
+    b.z = -0.03 + Math.random() * 0.06;
+    b.vx = Math.cos(angle) * speed * (0.6 + Math.random() * 0.8);
+    b.vy = Math.sin(angle) * speed * (0.6 + Math.random() * 0.8);
+    b.size = 0.012 + Math.random() * 0.028 + audioIntensity * 0.015;
+    b.wobblePhase = Math.random() * Math.PI * 2;
+    b.wobbleSpeed = 3 + Math.random() * 4;
+    b.life = 0;
+    b.maxLife = 0.8 + Math.random() * 1.2 + audioIntensity * 0.4;
+    b.angle = angle;
+  };
+
   useFrame((_, delta) => {
+    if (!pointsRef.current) return;
+    
     timeRef.current += delta;
 
-    if (!isPlaying || !analyser) {
-      let hasValue = false;
-      for (let i = 0; i < frequencyDataRef.current.length; i++) {
-        frequencyDataRef.current[i] *= 0.88;
-        if (frequencyDataRef.current[i] > 0.01) hasValue = true;
+    // Get audio intensity
+    if (isPlaying && analyser) {
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      
+      let sum = 0;
+      const midRange = Math.floor(dataArray.length * 0.3);
+      for (let i = 0; i < midRange; i++) {
+        sum += dataArray[i];
       }
-      if (!hasValue && frequencyDataRef.current.some((v) => v > 0)) {
-        setRenderKey((n) => n + 1);
-      }
-      return;
+      const targetIntensity = (sum / midRange / 255) * globalIntensity;
+      audioIntensityRef.current = audioIntensityRef.current * 0.85 + targetIntensity * 0.15;
+    } else {
+      audioIntensityRef.current *= 0.92;
     }
 
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
+    const audioIntensity = audioIntensityRef.current;
+    const baseColor = hexToRgb(primaryColor);
+    const bubbles = bubblesRef.current;
 
-    const binResolution = 22050 / dataArray.length;
-    const lowBin = Math.floor(60 / binResolution);
-    const highBin = Math.floor(500 / binResolution);
-    const binRange = highBin - lowBin;
+    for (let i = 0; i < BUBBLE_COUNT; i++) {
+      const b = bubbles[i];
+      
+      // Update life
+      b.life += delta;
+      
+      // Reset dead bubbles
+      if (b.life >= b.maxLife) {
+        if (audioIntensity > 0.03 || isPlaying) {
+          resetBubble(b, audioIntensity);
+        } else {
+          b.life = b.maxLife;
+        }
+      }
 
-    for (let i = 0; i < baseSplashCount; i++) {
-      const binIndex = lowBin + Math.floor((i / baseSplashCount) * binRange);
-      const rawValue = (dataArray[binIndex] ?? 0) / 255;
-      const threshold = 0.25 + seededRandom(i * 31) * 0.1;
-      const value = rawValue > threshold ? (rawValue - threshold) / (1 - threshold) : 0;
-      // Faster attack, slower decay for splash effect
-      const decay = value > frequencyDataRef.current[i] ? 0.3 : 0.8;
-      frequencyDataRef.current[i] = frequencyDataRef.current[i] * decay + value * (1 - decay);
+      const lifeRatio = b.life / b.maxLife;
+      
+      // Bubble wobble motion (side to side)
+      const wobble = Math.sin(timeRef.current * b.wobbleSpeed + b.wobblePhase) * 0.02;
+      const perpX = -Math.sin(b.angle);
+      const perpY = Math.cos(b.angle);
+      
+      // Move outward with wobble
+      const speedMod = 1 + audioIntensity * 0.3;
+      b.x += (b.vx + perpX * wobble) * delta * speedMod;
+      b.y += (b.vy + perpY * wobble) * delta * speedMod;
+      
+      // Slight upward drift and z wobble
+      b.z += Math.sin(timeRef.current * 2 + i) * 0.005 * delta;
+
+      // Slow down over time (drag effect)
+      b.vx *= 0.995;
+      b.vy *= 0.995;
+
+      // Update position buffer
+      positions[i * 3] = b.x;
+      positions[i * 3 + 1] = b.y;
+      positions[i * 3 + 2] = b.z;
+
+      // Bubble color: blend primary with cyan/blue water tones
+      const fadeIn = Math.min(1, b.life * 5);
+      const fadeOut = 1 - Math.pow(lifeRatio, 2);
+      const alpha = fadeIn * fadeOut;
+      
+      // Shimmering highlight effect
+      const shimmer = 0.3 + Math.sin(timeRef.current * 8 + i * 0.7) * 0.15;
+      
+      // Water-like colors blended with primary
+      const r = Math.min(1, baseColor.r * 0.4 + 0.3 + shimmer * 0.3);
+      const g = Math.min(1, baseColor.g * 0.5 + 0.5 + shimmer * 0.2);
+      const bl = Math.min(1, baseColor.b * 0.3 + 0.7 + shimmer * 0.1);
+
+      colors[i * 3] = r * alpha;
+      colors[i * 3 + 1] = g * alpha;
+      colors[i * 3 + 2] = bl * alpha;
+
+      // Bubbles grow slightly then shrink as they pop
+      const sizePhase = Math.sin(lifeRatio * Math.PI);
+      sizes[i] = b.size * sizePhase * (0.7 + audioIntensity * 0.5);
     }
 
-    setRenderKey((n) => n + 1);
+    const geometry = pointsRef.current.geometry;
+    geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.color.needsUpdate = true;
+    geometry.attributes.size.needsUpdate = true;
   });
 
-  const splashes = useMemo(() => {
-    return Array.from({ length: visibleSplashCount }, (_, i) => ({
-      angle: (i / visibleSplashCount) * Math.PI * 2 - Math.PI / 2,
-      dataIndex: i % baseSplashCount,
-      colorIndex: i,
-    }));
-  }, [visibleSplashCount]);
-
-  if (!isPlaying && frequencyDataRef.current.every((v) => v < 0.01)) return null;
-
   return (
-    <group ref={groupRef} position={[0, 0, -0.025]} key={renderKey}>
-      {splashes.map((s, i) => {
-        const intensity = frequencyDataRef.current[s.dataIndex] || 0;
-        if (intensity < 0.12) return null;
-
-        const length = innerRadius + intensity * (maxOuterRadius - innerRadius);
-        const color = getWaterColor(intensity, s.colorIndex * 137, primaryColor);
-        const points = generateSplashPath(s.angle, length, intensity, timeRef.current, s.colorIndex * 137);
-
-        return (
-          <Line
-            key={i}
-            points={points}
-            color={color}
-            lineWidth={0.4 + intensity * 0.3}
-          />
-        );
-      })}
-    </group>
+    <points ref={pointsRef} position={[0, 0, 0]}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={BUBBLE_COUNT}
+          array={positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={BUBBLE_COUNT}
+          array={colors}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-size"
+          count={BUBBLE_COUNT}
+          array={sizes}
+          itemSize={1}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.06}
+        vertexColors
+        transparent
+        opacity={0.85}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
   );
 }

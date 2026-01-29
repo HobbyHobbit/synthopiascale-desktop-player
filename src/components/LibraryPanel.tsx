@@ -244,6 +244,18 @@ export function LibraryPanel({
     [queue, setQueueIndex, onPlayTrack]
   );
 
+  const handleLibraryTrackPlay = useCallback(
+    (trackId: string) => {
+      // Add track to queue at current position and play immediately
+      addToQueue([trackId], 'next');
+      // The track will be at index queueIndex + 1, set that as the new index
+      const currentIndex = usePlaylistStore.getState().queueIndex;
+      setQueueIndex(currentIndex + 1);
+      onPlayTrack(trackId);
+    },
+    [addToQueue, setQueueIndex, onPlayTrack]
+  );
+
   if (!visible) return null;
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -304,7 +316,7 @@ export function LibraryPanel({
           ${isDragging ? 'opacity-50 scale-95' : ''}
           ${isDragOver ? 'border-t-2 border-gold' : ''}
         `}
-        onClick={() => (isQueueView ? handleQueueTrackClick(index) : onPlayTrack(track.id))}
+        onClick={() => (isQueueView ? handleQueueTrackClick(index) : handleLibraryTrackPlay(track.id))}
         onContextMenu={(e) => handleContextMenu(e, track.id, playlistId)}
       >
         {/* Drag Handle (Queue only) */}
