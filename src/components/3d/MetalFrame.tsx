@@ -145,6 +145,7 @@ const ROTATION_SPEED = 0.15;
 export interface MetalFrameProps {
   quality?: 'low' | 'high';
   primaryColor?: string;
+  rotationEnabled?: boolean;
 }
 
 function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'high' }) {
@@ -166,7 +167,7 @@ function FrontGlassFrame({ quality: _quality = 'high' }: { quality?: 'low' | 'hi
   );
 }
 
-function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37' }: { quality?: 'low' | 'high'; primaryColor?: string }) {
+function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37', rotationEnabled = true }: { quality?: 'low' | 'high'; primaryColor?: string; rotationEnabled?: boolean }) {
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION + 0.26;
   const frameCountRef = useRef(0);
@@ -189,8 +190,10 @@ function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37' }: { qu
     frameCountRef.current++;
     if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
     
-    const t = state.clock.elapsedTime;
-    meshRef.current.rotation.z = baseRotation - t * ROTATION_SPEED;
+    if (rotationEnabled) {
+      const t = state.clock.elapsedTime;
+      meshRef.current.rotation.z = baseRotation - t * ROTATION_SPEED;
+    }
   });
 
   return (
@@ -200,7 +203,7 @@ function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37' }: { qu
   );
 }
 
-function BackSilverPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) {
+function BackSilverPentagon({ quality = 'high', rotationEnabled = true }: { quality?: 'low' | 'high'; rotationEnabled?: boolean }) {
   const meshRef = useRef<Mesh>(null);
   const baseRotation = FRONT_FRAME_ROTATION - 0.26;
   const frameCountRef = useRef(0);
@@ -223,8 +226,10 @@ function BackSilverPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) 
     frameCountRef.current++;
     if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
     
-    const t = state.clock.elapsedTime;
-    meshRef.current.rotation.z = baseRotation + t * ROTATION_SPEED;
+    if (rotationEnabled) {
+      const t = state.clock.elapsedTime;
+      meshRef.current.rotation.z = baseRotation + t * ROTATION_SPEED;
+    }
   });
 
   return (
@@ -234,11 +239,11 @@ function BackSilverPentagon({ quality = 'high' }: { quality?: 'low' | 'high' }) 
   );
 }
 
-export function MetalFrame({ quality = 'high', primaryColor = '#d4af37' }: MetalFrameProps) {
+export function MetalFrame({ quality = 'high', primaryColor = '#d4af37', rotationEnabled = true }: MetalFrameProps) {
   return (
     <group>
-      <BackSilverPentagon quality={quality} />
-      <MiddleGoldPentagon quality={quality} primaryColor={primaryColor} />
+      <BackSilverPentagon quality={quality} rotationEnabled={rotationEnabled} />
+      <MiddleGoldPentagon quality={quality} primaryColor={primaryColor} rotationEnabled={rotationEnabled} />
       <FrontGlassFrame quality={quality} />
     </group>
   );

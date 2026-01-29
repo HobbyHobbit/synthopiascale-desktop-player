@@ -20,9 +20,10 @@ export interface StaircaseProps {
   bassIntensity?: number;
   quality?: 'low' | 'high';
   primaryColor?: string;
+  rotationEnabled?: boolean;
 }
 
-export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high', primaryColor = '#d4af37' }: StaircaseProps) {
+export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high', primaryColor = '#d4af37', rotationEnabled = true }: StaircaseProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
   const frameCountRef = useRef(0);
@@ -52,8 +53,8 @@ export function Staircase({ speed = 0.3, bassIntensity = 0, quality = 'high', pr
     frameCountRef.current++;
     if (quality === 'low' && frameCountRef.current % 3 !== 0) return;
 
-    const time = state.clock.elapsedTime;
-    const animOffset = 1 - ((time * speed) % 1);
+    const time = rotationEnabled ? state.clock.elapsedTime : 0;
+    const animOffset = rotationEnabled ? 1 - ((time * speed) % 1) : 0.5;
 
     for (let i = 0; i < STEP_COUNT; i++) {
       const progress = (i / STEP_COUNT + animOffset) % 1;

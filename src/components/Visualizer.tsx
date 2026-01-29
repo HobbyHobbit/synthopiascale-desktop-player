@@ -11,6 +11,8 @@ export interface VisualizerProps {
   quality: 'low' | 'high';
   showGlassCard: boolean;
   plasmaEnabled: boolean;
+  rotationEnabled: boolean;
+  visualizerType: 'plasma' | 'fire' | 'water';
 }
 
 export function Visualizer({
@@ -21,6 +23,8 @@ export function Visualizer({
   quality,
   showGlassCard,
   plasmaEnabled,
+  rotationEnabled,
+  visualizerType,
 }: VisualizerProps) {
   // Memoize GL config to prevent re-creation
   const glConfig = useMemo(() => ({
@@ -56,6 +60,8 @@ export function Visualizer({
             primaryColor={primaryColor}
             showGlassCard={showGlassCard}
             plasmaEnabled={plasmaEnabled}
+            rotationEnabled={rotationEnabled}
+            visualizerType={visualizerType}
           />
         </Suspense>
         {quality === 'high' && <Preload all />}

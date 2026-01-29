@@ -33,7 +33,6 @@
     "@react-three/fiber": "^8.15.12",
     "@react-three/postprocessing": "^2.15.11",
     "electron-store": "^8.1.0",
-    "electron-updater": "^6.1.7",
     "lucide-react": "^0.303.0",
     "postprocessing": "^6.34.1",
     "react": "^18.2.0",

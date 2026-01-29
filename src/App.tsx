@@ -34,14 +34,11 @@ declare global {
       getSettings: () => Promise<Record<string, unknown>>;
       setSettings: (settings: Record<string, unknown>) => Promise<void>;
       openExternal: (url: string) => Promise<void>;
-      installUpdate: () => Promise<void>;
       openFiles: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
       openFolder: () => Promise<Array<{ path: string; name: string; duration?: number }> | null>;
       showItemInFolder: (filePath: string) => Promise<void>;
       onToggleTransparentMode: (callback: () => void) => void;
       onOpenSettings: (callback: () => void) => void;
-      onUpdateAvailable: (callback: () => void) => void;
-      onUpdateDownloaded: (callback: () => void) => void;
       onOpenFilesFromSystem: (callback: (files: Array<{ path: string; name: string }>) => void) => void;
     };
   }
@@ -240,7 +237,11 @@ function App() {
       style={{ background: transparentMode ? 'transparent' : undefined }}
     >
       {/* Background Particles (static visual, not synced to playback) */}
-      <ParticleBackground enabled={settings.particlesEnabled && !transparentMode} primaryColor={settings.primaryColor} />
+      <ParticleBackground 
+        enabled={settings.particlesEnabled && !transparentMode} 
+        primaryColor={settings.primaryColor}
+        hoverEnabled={settings.particleHoverEnabled}
+      />
 
       {/* Main Visualizer with Error Boundary */}
       <ErrorBoundary>
@@ -252,6 +253,8 @@ function App() {
           quality={settings.quality}
           showGlassCard={settings.showGlassCard}
           plasmaEnabled={settings.plasmaEnabled}
+          rotationEnabled={settings.rotationEnabled}
+          visualizerType={settings.visualizerType}
         />
       </ErrorBoundary>
 
@@ -414,6 +417,9 @@ function App() {
           onOpenLibrary={() => setShowLibrary(true)}
           onToggleFullVisualizer={toggleFullscreen}
           primaryColor={settings.primaryColor}
+          onPlaybackRateChange={setPlaybackRate}
+          visualizerType={settings.visualizerType}
+          onVisualizerTypeChange={(type) => setSettings({ visualizerType: type })}
         />
       )}
     </div>

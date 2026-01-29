@@ -171,13 +171,6 @@ export function AudioPlayerUI({
           <p className="text-lg md:text-xl text-primary-solid/80 font-medium mt-2 tracking-wide">
             Independent Electronic Arts & Sound
           </p>
-          <p className="text-sm text-muted-foreground mt-4 max-w-md mx-auto italic">
-            To every soul, every mind and every wave that shapes SynthopiaScale — 
-            these tracks belong to you.
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            We climb the Scale together, story by story, sound by sound.
-          </p>
         </div>
       )}
 

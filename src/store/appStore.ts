@@ -3,13 +3,18 @@ import { create } from 'zustand';
 export type AudioSource = 'system' | 'microphone' | 'midi';
 export type Quality = 'low' | 'high';
 
+export type VisualizerType = 'plasma' | 'fire' | 'water';
+
 export interface Settings {
   audioSource: AudioSource;
   intensity: number;
   primaryColor: string;
   quality: Quality;
   particlesEnabled: boolean;
+  particleHoverEnabled: boolean;
   plasmaEnabled: boolean;
+  rotationEnabled: boolean;
+  visualizerType: VisualizerType;
   alwaysOnTop: boolean;
   recordingEnabled: boolean;
   recordingFormat: 'webm' | 'gif';
@@ -33,14 +38,12 @@ interface AppState {
   }>;
   currentDisplay: number;
   isRecording: boolean;
-  updateAvailable: boolean;
   setSettings: (settings: Partial<Settings>) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
   setDisplays: (displays: AppState['displays']) => void;
   setCurrentDisplay: (index: number) => void;
   setIsRecording: (recording: boolean) => void;
-  setUpdateAvailable: (available: boolean) => void;
 }
 
 const defaultSettings: Settings = {
@@ -49,7 +52,10 @@ const defaultSettings: Settings = {
   primaryColor: '#d4af37',
   quality: 'high',
   particlesEnabled: true,
+  particleHoverEnabled: true,
   plasmaEnabled: true,
+  rotationEnabled: true,
+  visualizerType: 'plasma',
   alwaysOnTop: false,
   recordingEnabled: false,
   recordingFormat: 'webm',
@@ -67,7 +73,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   displays: [],
   currentDisplay: 0,
   isRecording: false,
-  updateAvailable: false,
 
   setSettings: (newSettings) => {
     set((state) => ({
@@ -103,5 +108,4 @@ export const useAppStore = create<AppState>((set, get) => ({
   setDisplays: (displays) => set({ displays }),
   setCurrentDisplay: (index) => set({ currentDisplay: index }),
   setIsRecording: (recording) => set({ isRecording: recording }),
-  setUpdateAvailable: (available) => set({ updateAvailable: available }),
 }));

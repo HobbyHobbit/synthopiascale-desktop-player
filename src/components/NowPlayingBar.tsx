@@ -13,6 +13,10 @@ import {
   ListMusic,
   Maximize2,
   FolderOpen,
+  Gauge,
+  Zap,
+  Flame,
+  Droplets,
 } from 'lucide-react';
 import { usePlaylistStore, RepeatMode } from '../store/playlistStore';
 
@@ -38,6 +42,9 @@ interface NowPlayingBarProps {
   onOpenLibrary: () => void;
   onToggleFullVisualizer?: () => void;
   primaryColor?: string;
+  onPlaybackRateChange?: (rate: number) => void;
+  visualizerType?: 'plasma' | 'fire' | 'water';
+  onVisualizerTypeChange?: (type: 'plasma' | 'fire' | 'water') => void;
 }
 
 export function NowPlayingBar({
@@ -52,8 +59,12 @@ export function NowPlayingBar({
   onOpenLibrary,
   onToggleFullVisualizer,
   primaryColor = '#d4af37',
+  onPlaybackRateChange,
+  visualizerType = 'plasma',
+  onVisualizerTypeChange,
 }: NowPlayingBarProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -163,10 +174,22 @@ export function NowPlayingBar({
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
-          {/* Album Art Placeholder */}
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `linear-gradient(to bottom right, ${primaryColor}4D, ${primaryColor}1A)` }}>
-            <div className="w-6 h-6 rotate-45" style={{ border: `2px solid ${primaryColor}80` }} />
-          </div>
+          {/* Visualizer Type Selector Button */}
+          <button
+            onClick={() => {
+              const types: Array<'plasma' | 'fire' | 'water'> = ['plasma', 'fire', 'water'];
+              const currentIndex = types.indexOf(visualizerType);
+              const nextIndex = (currentIndex + 1) % types.length;
+              onVisualizerTypeChange?.(types[nextIndex]);
+            }}
+            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-all hover:scale-105"
+            style={{ background: `linear-gradient(to bottom right, ${primaryColor}4D, ${primaryColor}1A)`, border: `1px solid ${primaryColor}40` }}
+            title={`Visualizer: ${visualizerType}`}
+          >
+            {visualizerType === 'plasma' && <Zap className="w-5 h-5" style={{ color: primaryColor }} />}
+            {visualizerType === 'fire' && <Flame className="w-5 h-5" style={{ color: primaryColor }} />}
+            {visualizerType === 'water' && <Droplets className="w-5 h-5" style={{ color: primaryColor }} />}
+          </button>
 
           {trackInfo ? (
             <div className="min-w-0">
@@ -278,6 +301,25 @@ export function NowPlayingBar({
               <RepeatIcon className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Playback Speed */}
+          <button
+            onClick={() => {
+              const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+              const currentIndex = speeds.indexOf(playbackSpeed);
+              const nextIndex = (currentIndex + 1) % speeds.length;
+              const newSpeed = speeds[nextIndex];
+              setPlaybackSpeed(newSpeed);
+              onPlaybackRateChange?.(newSpeed);
+            }}
+            className="p-2 rounded-full transition-colors text-white/50 hover:text-white/80"
+            title={`Speed: ${playbackSpeed}x`}
+          >
+            <div className="flex items-center gap-1">
+              <Gauge className="w-4 h-4" />
+              <span className="text-xs">{playbackSpeed}x</span>
+            </div>
+          </button>
 
           {/* Time Display */}
           <div className="flex items-center gap-2 text-xs text-white/50">

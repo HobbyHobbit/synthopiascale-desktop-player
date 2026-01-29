@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, shell, de
 import * as fs from 'fs';
 import * as path from 'path';
 import Store from 'electron-store';
-import { autoUpdater } from 'electron-updater';
 
 const store = new Store();
 
@@ -394,11 +393,6 @@ ipcMain.handle('open-folder', async () => {
 app.whenReady().then(() => {
   createWindow();
 
-  // Check for updates in production
-  if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -417,15 +411,3 @@ app.on('before-quit', () => {
   saveWindowState();
 });
 
-// Auto-updater events
-autoUpdater.on('update-available', () => {
-  mainWindow?.webContents.send('update-available');
-});
-
-autoUpdater.on('update-downloaded', () => {
-  mainWindow?.webContents.send('update-downloaded');
-});
-
-ipcMain.handle('install-update', () => {
-  autoUpdater.quitAndInstall();
-});

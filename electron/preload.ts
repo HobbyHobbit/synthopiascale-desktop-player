@@ -29,15 +29,12 @@ export interface ElectronAPI {
   getSettings: () => Promise<Record<string, unknown>>;
   setSettings: (settings: Record<string, unknown>) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
-  installUpdate: () => Promise<void>;
   getDesktopSources: () => Promise<DesktopSource[]>;
   openFiles: () => Promise<AudioFileInfo[] | null>;
   openFolder: () => Promise<AudioFileInfo[] | null>;
   showItemInFolder: (filePath: string) => Promise<void>;
   onToggleTransparentMode: (callback: () => void) => void;
   onOpenSettings: (callback: () => void) => void;
-  onUpdateAvailable: (callback: () => void) => void;
-  onUpdateDownloaded: (callback: () => void) => void;
   onOpenFilesFromSystem: (callback: (files: AudioFileInfo[]) => void) => void;
 }
 
@@ -52,7 +49,6 @@ const electronAPI: ElectronAPI = {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('set-settings', settings),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
-  installUpdate: () => ipcRenderer.invoke('install-update'),
   getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
   openFiles: () => ipcRenderer.invoke('open-files'),
   openFolder: () => ipcRenderer.invoke('open-folder'),
@@ -62,12 +58,6 @@ const electronAPI: ElectronAPI = {
   },
   onOpenSettings: (callback: () => void) => {
     ipcRenderer.on('open-settings', callback);
-  },
-  onUpdateAvailable: (callback: () => void) => {
-    ipcRenderer.on('update-available', callback);
-  },
-  onUpdateDownloaded: (callback: () => void) => {
-    ipcRenderer.on('update-downloaded', callback);
   },
   onOpenFilesFromSystem: (callback: (files: AudioFileInfo[]) => void) => {
     ipcRenderer.on('open-files-from-system', (_event, files) => callback(files));

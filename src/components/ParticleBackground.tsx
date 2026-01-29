@@ -18,6 +18,7 @@ interface Particle {
 interface ParticleBackgroundProps {
   enabled?: boolean;
   primaryColor?: string;
+  hoverEnabled?: boolean;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -26,7 +27,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${alpha})`;
 }
 
-export function ParticleBackground({ enabled = true, primaryColor = '#d4af37' }: ParticleBackgroundProps) {
+export function ParticleBackground({ enabled = true, primaryColor = '#d4af37', hoverEnabled = true }: ParticleBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
@@ -142,8 +143,8 @@ export function ParticleBackground({ enabled = true, primaryColor = '#d4af37' }:
 
       // Update and draw particles
       particlesRef.current.forEach((particle) => {
-        // Mouse interaction
-        if (mouseRef.current.active) {
+        // Mouse interaction (only if hoverEnabled)
+        if (hoverEnabled && mouseRef.current.active) {
           const dx = mouseRef.current.x - particle.x;
           const dy = mouseRef.current.y - particle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);

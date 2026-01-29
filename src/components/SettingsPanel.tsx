@@ -15,6 +15,10 @@ import {
   Sun,
   Sparkles,
   Check,
+  RotateCcw,
+  MousePointer2,
+  Flame,
+  Droplets,
 } from 'lucide-react';
 import { useAppStore, AudioSource, Quality } from '../store/appStore';
 import { useThemeStore } from '../store/themeStore';
@@ -160,12 +164,40 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 />
               </div>
 
+              {/* Visualizer Type Selector */}
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2">
+                  <Zap className="w-4 h-4" />
+                  Visualisierung
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'plasma' as const, label: 'Plasma', icon: Zap },
+                    { value: 'fire' as const, label: 'Feuer', icon: Flame },
+                    { value: 'water' as const, label: 'Wasser', icon: Droplets },
+                  ].map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSettings({ visualizerType: value })}
+                      className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                        settings.visualizerType === value
+                          ? 'bg-primary-solid/20 border border-primary-solid'
+                          : 'bg-white/5 border border-transparent hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${settings.visualizerType === value ? 'text-primary-solid' : 'text-muted-foreground'}`} />
+                      <span className="text-xs">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Toggles */}
               <div className="space-y-3">
                 <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
                   <span className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
-                    Audio Visualization (Plasma)
+                    Audio Visualisierung aktiv
                   </span>
                   <input
                     type="checkbox"
@@ -176,13 +208,37 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </label>
                 <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
                   <span className="flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4" />
+                    Rotation & Treppenanimation
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.rotationEnabled}
+                    onChange={(e) => setSettings({ rotationEnabled: e.target.checked })}
+                    className="w-5 h-5 accent-primary-solid"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                  <span className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Background Particles
+                    Hintergrund Partikel
                   </span>
                   <input
                     type="checkbox"
                     checked={settings.particlesEnabled}
                     onChange={(e) => setSettings({ particlesEnabled: e.target.checked })}
+                    className="w-5 h-5 accent-primary-solid"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <MousePointer2 className="w-4 h-4" />
+                    Partikel Maus-Hover Effekt
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.particleHoverEnabled}
+                    onChange={(e) => setSettings({ particleHoverEnabled: e.target.checked })}
                     className="w-5 h-5 accent-primary-solid"
                   />
                 </label>

@@ -6,6 +6,8 @@ import { MetalFrame } from './MetalFrame';
 import { Staircase } from './Staircase';
 import { Effects } from './Effects';
 import { AudioVisualizer3D } from './AudioVisualizer3D';
+import { FireVisualizer3D } from './FireVisualizer3D';
+import { WaterVisualizer3D } from './WaterVisualizer3D';
 
 export interface SceneProps {
   analyser: AnalyserNode | null;
@@ -15,6 +17,8 @@ export interface SceneProps {
   primaryColor: string;
   showGlassCard: boolean;
   plasmaEnabled: boolean;
+  rotationEnabled: boolean;
+  visualizerType: 'plasma' | 'fire' | 'water';
 }
 
 // Reduced animation speeds for smoother performance
@@ -32,6 +36,8 @@ export const Scene = memo(function Scene({
   primaryColor,
   showGlassCard,
   plasmaEnabled,
+  rotationEnabled,
+  visualizerType,
 }: SceneProps) {
   const logoGroupRef = useRef<Group>(null);
   const fillLightRef = useRef<DirectionalLight>(null);
@@ -82,7 +88,7 @@ export const Scene = memo(function Scene({
       {/* Logo Group */}
       <group ref={logoGroupRef}>
         {/* Audio Visualizer - shown when GlassCard hidden OR plasma explicitly enabled */}
-        {(!showGlassCard || plasmaEnabled) && (
+        {(!showGlassCard || plasmaEnabled) && visualizerType === 'plasma' && (
           <AudioVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}
@@ -90,10 +96,26 @@ export const Scene = memo(function Scene({
             primaryColor={primaryColor}
           />
         )}
+        {(!showGlassCard || plasmaEnabled) && visualizerType === 'fire' && (
+          <FireVisualizer3D
+            analyser={analyser}
+            isPlaying={isPlaying}
+            intensity={intensity}
+            primaryColor={primaryColor}
+          />
+        )}
+        {(!showGlassCard || plasmaEnabled) && visualizerType === 'water' && (
+          <WaterVisualizer3D
+            analyser={analyser}
+            isPlaying={isPlaying}
+            intensity={intensity}
+            primaryColor={primaryColor}
+          />
+        )}
         {/* Metal frames */}
-        <MetalFrame quality={quality} primaryColor={primaryColor} />
+        <MetalFrame quality={quality} primaryColor={primaryColor} rotationEnabled={rotationEnabled} />
         {/* Stairs on top */}
-        <Staircase quality={quality} primaryColor={primaryColor} />
+        <Staircase quality={quality} primaryColor={primaryColor} rotationEnabled={rotationEnabled} />
       </group>
 
       {/* Post-processing only in high quality */}
