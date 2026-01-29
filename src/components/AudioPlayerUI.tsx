@@ -36,6 +36,8 @@ interface AudioPlayerUIProps {
   showTrackInfo?: boolean;
   onToggleFullscreen?: () => void;
   primaryColor?: string;
+  muted?: boolean;
+  onToggleMute?: () => void;
 }
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
@@ -81,11 +83,12 @@ export function AudioPlayerUI({
   showTimeline = true,
   showTrackInfo = true,
   onToggleFullscreen,
+  muted = false,
+  onToggleMute,
 }: AudioPlayerUIProps) {
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [muted, setMuted] = useState(false);
   const [frequencyBars, setFrequencyBars] = useState<number[]>(new Array(64).fill(0));
   const animationRef = useRef<number | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -313,8 +316,12 @@ export function AudioPlayerUI({
         </button>
         
         <button
-          onClick={() => setMuted(!muted)}
-          className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all"
+          onClick={onToggleMute}
+          className={`p-2 rounded-full transition-all ${
+            muted 
+              ? 'text-red-400 bg-red-500/20' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+          }`}
           title={muted ? 'Unmute' : 'Mute'}
         >
           {muted ? (

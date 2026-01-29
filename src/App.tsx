@@ -52,7 +52,7 @@ function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
   const { settings, loadSettings, setSettings } = useAppStore();
-  const { volume, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
+  const { volume, muted, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
   const { 
     isPlaying, 
     currentTrack, 
@@ -114,14 +114,15 @@ function App() {
     return () => cancelAnimationFrame(animationId);
   }, [analyser, isPlaying]);
 
-  // Performance mode: enables glass card overlay and sets low quality for smooth playback
+  // Performance mode: enables glass card overlay and disables all heavy animations
+  const { setPerformanceMode } = useAppStore();
   const togglePerformanceMode = useCallback(() => {
     const newPerformanceMode = !settings.showGlassCard;
-    setSettings({ 
-      showGlassCard: newPerformanceMode,
-      quality: newPerformanceMode ? 'low' : 'high'
-    });
-  }, [settings.showGlassCard, setSettings]);
+    // Use setPerformanceMode which handles all animation disabling
+    setPerformanceMode(newPerformanceMode);
+    // Also set showGlassCard since it's the visual indicator
+    setSettings({ showGlassCard: newPerformanceMode });
+  }, [settings.showGlassCard, setSettings, setPerformanceMode]);
 
   // Handle files opened from system (Open With)
   const handleFilesFromSystem = useCallback((files: Array<{ path: string; name: string }>) => {
@@ -276,6 +277,8 @@ function App() {
           showTrackInfo={settings.showTrackInfo}
           onToggleFullscreen={toggleFullscreen}
           primaryColor={settings.primaryColor}
+          muted={muted}
+          onToggleMute={toggleMute}
         />
       </GlassCard>
 
