@@ -156,6 +156,12 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         const audio = audioRef.current;
         if (!audio) return;
         
+        // Ignore errors when no real source is set (empty or just the base URL)
+        const src = audio.src;
+        if (!src || src === window.location.href || src === window.location.origin + '/') {
+          return;
+        }
+        
         const error = audio.error;
         if (error) {
           const errorMessages: Record<number, string> = {
@@ -164,7 +170,7 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
             3: 'MEDIA_ERR_DECODE - Media decoding failed',
             4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Source not supported',
           };
-          console.error('Audio error:', errorMessages[error.code] || `Unknown error code: ${error.code}`, audio.src);
+          console.error('Audio error:', errorMessages[error.code] || `Unknown error code: ${error.code}`, src);
         }
       });
     }
