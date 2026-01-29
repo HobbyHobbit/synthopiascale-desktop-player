@@ -20,7 +20,7 @@ import {
   Flame,
   Droplets,
 } from 'lucide-react';
-import { useAppStore, AudioSource, Quality } from '../store/appStore';
+import { useAppStore, AudioSource } from '../store/appStore';
 import { useThemeStore } from '../store/themeStore';
 import { RecordingControls } from './RecordingControls';
 
@@ -34,10 +34,6 @@ const audioSources: { value: AudioSource; label: string; icon: typeof Monitor; d
   { value: 'midi', label: 'MIDI', icon: Music, description: 'Windows Wavetable MIDI input' },
 ];
 
-const qualityOptions: { value: Quality; label: string }[] = [
-  { value: 'low', label: 'Performance' },
-  { value: 'high', label: 'Quality' },
-];
 
 const colorPresets = [
   { name: 'Gold', value: '#d4af37' },
@@ -205,6 +201,37 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
               </div>
 
+              {/* Performance/Quality Mode Buttons */}
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2">
+                  <Gauge className="w-4 h-4" />
+                  Modus
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPerformanceMode(true)}
+                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                      settings.showGlassCard
+                        ? 'bg-green-500/20 border border-green-500'
+                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+                    }`}
+                  >
+                    <Zap className={`w-5 h-5 ${settings.showGlassCard ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    <span className="text-xs">Performance</span>
+                  </button>
+                  <button
+                    onClick={() => setPerformanceMode(false)}
+                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                      !settings.showGlassCard
+                        ? 'bg-primary-solid/20 border border-primary-solid'
+                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+                    }`}
+                  >
+                    <Sparkles className={`w-5 h-5 ${!settings.showGlassCard ? 'text-primary-solid' : 'text-muted-foreground'}`} />
+                    <span className="text-xs">Quality</span>
+                  </button>
+                </div>
+              </div>
 
             </div>
           </section>
@@ -413,35 +440,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             </div>
           </section>
 
-          {/* Quality */}
-          <section>
-            <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
-              <Gauge className="w-5 h-5 text-primary-solid" />
-              Quality
-            </h3>
-            <div className="flex gap-3">
-              {qualityOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setPerformanceMode(option.value === 'low')}
-                  className={`
-                    flex-1 py-3 px-4 rounded-xl transition-all
-                    ${settings.quality === option.value
-                      ? 'bg-primary-solid/20 border-2 border-primary-solid'
-                      : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            {settings.quality === 'low' && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Performance-Modus: Effekte und Animationen werden automatisch deaktiviert.
-              </p>
-            )}
-          </section>
 
           {/* Window Settings - Display Selection */}
           {displays.length > 1 && (

@@ -30,6 +30,7 @@ interface LibraryPanelProps {
   isPlaying: boolean;
   audioMode?: 'internal' | 'system';
   onAudioModeChange?: (mode: 'internal' | 'system') => void;
+  showFooterPlayer?: boolean;
 }
 
 type View = 'playlists' | 'queue' | 'library' | 'playlist-detail';
@@ -42,6 +43,7 @@ export function LibraryPanel({
   isPlaying,
   audioMode = 'internal',
   onAudioModeChange,
+  showFooterPlayer = false,
 }: LibraryPanelProps) {
   const [view, setView] = useState<View>('queue');
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
@@ -464,12 +466,13 @@ export function LibraryPanel({
       {/* Panel */}
       <div
         className={`
-          fixed left-0 top-0 bottom-0 w-80 z-40
+          fixed left-0 top-0 w-80 z-40
           bg-black/80 backdrop-blur-xl border-r border-white/10
           flex flex-col
-          transform transition-transform duration-300
+          transform transition-all duration-300
           ${visible ? 'translate-x-0' : '-translate-x-full'}
         `}
+        style={{ bottom: showFooterPlayer ? '80px' : '0' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">

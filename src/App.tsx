@@ -286,13 +286,16 @@ function App() {
           >
             <HelpCircle className="w-5 h-5 text-foreground/70 hover:text-foreground" />
           </button>
-          <button
-            onClick={() => setShowLibrary(prev => !prev)}
-            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showLibrary ? 'bg-gold/20' : ''}`}
-            title="Library (Ctrl+L)"
-          >
-            <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
-          </button>
+          {/* Library button - only show in performance mode (showGlassCard = true) */}
+          {settings.showGlassCard && (
+            <button
+              onClick={() => setShowLibrary(prev => !prev)}
+              className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showLibrary ? 'bg-gold/20' : ''}`}
+              title="Library (Ctrl+L)"
+            >
+              <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+            </button>
+          )}
           <button
             onClick={() => setShowEQ(prev => !prev)}
             className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showEQ ? 'bg-gold/20' : ''}`}
@@ -401,6 +404,7 @@ function App() {
         isPlaying={isPlaying}
         audioMode={audioMode}
         onAudioModeChange={setAudioMode}
+        showFooterPlayer={!settings.showGlassCard && !isFullscreen && !transparentMode}
       />
 
       {/* Now Playing Bar - shown when glass card is hidden (NOT in fullscreen to avoid redundancy) */}
@@ -414,7 +418,7 @@ function App() {
           onNext={nextTrack}
           onSeek={seek}
           onVolumeChange={handleVolumeChange}
-          onOpenLibrary={() => setShowLibrary(true)}
+          onOpenLibrary={() => setShowLibrary(prev => !prev)}
           onToggleFullVisualizer={toggleFullscreen}
           primaryColor={settings.primaryColor}
           onPlaybackRateChange={setPlaybackRate}
