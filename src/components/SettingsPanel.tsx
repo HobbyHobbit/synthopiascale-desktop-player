@@ -205,6 +205,38 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
               </div>
 
+              {/* Performance / Quality Mode Selector */}
+              <div>
+                <label className="flex items-center gap-2 text-sm mb-2">
+                  <Gauge className="w-4 h-4" />
+                  Modus
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPerformanceMode(true)}
+                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                      settings.showGlassCard
+                        ? 'bg-green-500/20 border border-green-500'
+                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+                    }`}
+                  >
+                    <Zap className={`w-5 h-5 ${settings.showGlassCard ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    <span className="text-xs">Performance</span>
+                  </button>
+                  <button
+                    onClick={() => setPerformanceMode(false)}
+                    className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                      !settings.showGlassCard
+                        ? 'bg-primary-solid/20 border border-primary-solid'
+                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+                    }`}
+                  >
+                    <Sparkles className={`w-5 h-5 ${!settings.showGlassCard ? 'text-primary-solid' : 'text-muted-foreground'}`} />
+                    <span className="text-xs">Quality</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </section>
 
