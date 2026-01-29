@@ -205,10 +205,11 @@ export function LibraryPanel({
           });
           trackIds.push(id);
         });
-        addToQueue(trackIds, 'last');
+        // Replace queue with new tracks and start at first track
+        setQueue(trackIds, 0);
       }
     }
-  }, [addToLibrary, addToQueue]);
+  }, [addToLibrary, setQueue]);
 
   const handleImportM3U = useCallback(() => {
     const input = document.createElement('input');
