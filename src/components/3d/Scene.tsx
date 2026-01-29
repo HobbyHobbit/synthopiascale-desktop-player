@@ -13,7 +13,6 @@ export interface SceneProps {
   quality: 'low' | 'high';
   intensity: number;
   primaryColor: string;
-  plasmaEnabled: boolean;
   showGlassCard: boolean;
 }
 
@@ -30,7 +29,6 @@ export const Scene = memo(function Scene({
   quality,
   intensity,
   primaryColor,
-  plasmaEnabled,
   showGlassCard,
 }: SceneProps) {
   const logoGroupRef = useRef<Group>(null);
@@ -81,8 +79,8 @@ export const Scene = memo(function Scene({
 
       {/* Logo Group */}
       <group ref={logoGroupRef}>
-        {/* Audio Visualizer - only when plasma enabled AND GlassCard is hidden (performance) */}
-        {plasmaEnabled && !showGlassCard && (
+        {/* Audio Visualizer - essential branding, shown when GlassCard is hidden */}
+        {!showGlassCard && (
           <AudioVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}

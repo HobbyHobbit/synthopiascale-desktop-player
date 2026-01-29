@@ -9,7 +9,6 @@ export interface VisualizerProps {
   intensity: number;
   primaryColor: string;
   quality: 'low' | 'high';
-  plasmaEnabled: boolean;
   showGlassCard: boolean;
 }
 
@@ -19,7 +18,6 @@ export function Visualizer({
   intensity,
   primaryColor,
   quality,
-  plasmaEnabled,
   showGlassCard,
 }: VisualizerProps) {
   // Memoize GL config to prevent re-creation
@@ -54,7 +52,6 @@ export function Visualizer({
             quality={quality}
             intensity={intensity}
             primaryColor={primaryColor}
-            plasmaEnabled={plasmaEnabled}
             showGlassCard={showGlassCard}
           />
         </Suspense>

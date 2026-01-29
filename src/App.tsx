@@ -215,7 +215,6 @@ function App() {
           intensity={settings.intensity}
           primaryColor={settings.primaryColor}
           quality={settings.quality}
-          plasmaEnabled={settings.plasmaEnabled}
           showGlassCard={settings.showGlassCard}
         />
       </ErrorBoundary>
