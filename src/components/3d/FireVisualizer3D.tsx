@@ -33,7 +33,8 @@ interface SparkParticle {
 }
 
 const MAX_PARTICLES = 800;
-const INNER_RADIUS = 0.12;
+const INNER_RADIUS = 0.115;
+const MAX_OUTER_RADIUS = 0.99;
 
 export function FireVisualizer3D({
   analyser,
@@ -169,12 +170,24 @@ export function FireVisualizer3D({
       p.vx += Math.sin(turbPhase) * 0.08 * delta;
       p.vy += Math.cos(turbPhase * PHI) * 0.08 * delta;
 
+      // Clamp to max radius (same as plasma bolts)
+      const dist = Math.sqrt(p.x * p.x + p.y * p.y);
+      if (dist > MAX_OUTER_RADIUS) {
+        const scale = MAX_OUTER_RADIUS / dist;
+        p.x *= scale;
+        p.y *= scale;
+        // Slow down at edge
+        p.vx *= 0.5;
+        p.vy *= 0.5;
+      }
+
       positions[i * 3] = p.x;
       positions[i * 3 + 1] = p.y;
       positions[i * 3 + 2] = p.z;
 
-      // Theme-aware fire colors
-      const fireColor = getFireColor(baseColor, pulse.current, lifeRatio);
+      // Distance-based color: pale/white at center, intense primaryColor at edge
+      const normalizedDist = Math.min(1, (dist - INNER_RADIUS) / (MAX_OUTER_RADIUS - INNER_RADIUS));
+      const fireColor = getFireColor(baseColor, pulse.current, lifeRatio, normalizedDist);
       colors[i * 3] = fireColor.r;
       colors[i * 3 + 1] = fireColor.g;
       colors[i * 3 + 2] = fireColor.b;

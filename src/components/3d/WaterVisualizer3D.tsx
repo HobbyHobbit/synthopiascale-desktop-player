@@ -68,7 +68,8 @@ interface Bubble {
 }
 
 const MAX_BUBBLES = 500;
-const INNER_RADIUS = 0.12;
+const INNER_RADIUS = 0.115;
+const MAX_OUTER_RADIUS = 0.99;
 
 export function WaterVisualizer3D({
   analyser,
@@ -202,7 +203,7 @@ export function WaterVisualizer3D({
       const perpX = -Math.sin(b.angle);
       const perpY = Math.cos(b.angle);
       
-      // Move outward with wobble - bubbles should reach MAX_OUTER_RADIUS
+      // Move outward with wobble
       b.x += (b.vx + perpX * wobble) * delta * pulseBoost;
       b.y += (b.vy + perpY * wobble) * delta * pulseBoost;
       
@@ -212,6 +213,16 @@ export function WaterVisualizer3D({
       // Slight drag for floaty feel
       b.vx *= 0.998;
       b.vy *= 0.998;
+
+      // Clamp to max radius (same as plasma bolts)
+      const dist = Math.sqrt(b.x * b.x + b.y * b.y);
+      if (dist > MAX_OUTER_RADIUS) {
+        const scale = MAX_OUTER_RADIUS / dist;
+        b.x *= scale;
+        b.y *= scale;
+        b.vx *= 0.5;
+        b.vy *= 0.5;
+      }
 
       positions[i * 3] = b.x;
       positions[i * 3 + 1] = b.y;

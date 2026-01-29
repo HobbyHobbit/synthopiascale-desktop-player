@@ -107,21 +107,28 @@ export function hexToHsl(hex: string): { h: number; s: number; l: number } {
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-// Transform color for fire effect (warm shift, high saturation)
+// Transform color for fire effect with distance gradient
+// Center is pale/white, outer edge is intense primaryColor
 export function getFireColor(
   baseColor: { r: number; g: number; b: number },
   intensity: number,
-  particleLife: number
+  particleLife: number,
+  normalizedDist: number = 0.5
 ): { r: number; g: number; b: number } {
-  const coreGlow = Math.max(0, 1 - particleLife * 1.5);
   const fadeOut = 1 - particleLife;
   
-  // Warm the color (shift toward orange/yellow) while preserving base hue
-  const warmth = 0.3 + intensity * 0.4;
+  // Distance controls color intensity: 0 = pale/white center, 1 = full primaryColor at edge
+  const colorIntensity = normalizedDist;
+  
+  // Warm glow at center (white/yellow), transitions to primaryColor at edge
+  const centerWhite = 1 - colorIntensity;
+  const edgeColor = colorIntensity;
+  
+  // Fire gradient: white/pale yellow center -> orange middle -> primaryColor edge
   return {
-    r: Math.min(1, baseColor.r * 0.5 + 0.5 + coreGlow * 0.5) * fadeOut,
-    g: Math.min(1, baseColor.g * warmth + coreGlow * 0.7 - particleLife * 0.3) * fadeOut,
-    b: Math.max(0, baseColor.b * 0.2 + coreGlow * 0.2 - particleLife * 0.4) * fadeOut,
+    r: Math.min(1, centerWhite * 1.0 + edgeColor * baseColor.r + intensity * 0.2) * fadeOut,
+    g: Math.min(1, centerWhite * 0.9 + edgeColor * baseColor.g * 0.7 - normalizedDist * 0.3) * fadeOut,
+    b: Math.max(0, centerWhite * 0.6 + edgeColor * baseColor.b * 0.3 - normalizedDist * 0.4) * fadeOut,
   };
 }
 
