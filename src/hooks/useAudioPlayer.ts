@@ -156,9 +156,14 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         const audio = audioRef.current;
         if (!audio) return;
         
-        // Ignore errors when no real source is set (empty or just the base URL)
+        // Ignore errors when no real source is set
         const src = audio.src;
-        if (!src || src === window.location.href || src === window.location.origin + '/') {
+        if (!src || 
+            src === '' || 
+            src === window.location.href || 
+            src === window.location.origin + '/' ||
+            src.endsWith(':5173/') ||
+            !src.match(/\.(mp3|wav|ogg|flac|m4a|aac|webm)(\?.*)?$/i)) {
           return;
         }
         
