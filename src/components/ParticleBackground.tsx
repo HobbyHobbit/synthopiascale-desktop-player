@@ -12,13 +12,35 @@ interface Particle {
   baseSpeedY: number;
   angle: number;
   angleSpeed: number;
+  pulsePhase: number; // For beat sync
 }
 
-export function ParticleBackground() {
+interface ParticleBackgroundProps {
+  bpm?: number;
+  isBeat?: boolean;
+  beatInterval?: number;
+}
+
+export function ParticleBackground({ bpm = 120, isBeat = false }: ParticleBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const mouseRef = useRef({ x: 0, y: 0, active: false });
   const animationFrameRef = useRef<number | null>(null);
+  const beatPulseRef = useRef(0); // 0-1, decays after beat
+  const bpmRef = useRef(bpm);
+  const timeRef = useRef(0);
+
+  // Update BPM ref when prop changes
+  useEffect(() => {
+    bpmRef.current = bpm;
+  }, [bpm]);
+
+  // Trigger beat pulse when isBeat changes to true
+  useEffect(() => {
+    if (isBeat) {
+      beatPulseRef.current = 1;
+    }
+  }, [isBeat]);
 
   const colors = [
     'rgba(220, 225, 235, 0.6)',
@@ -45,6 +67,7 @@ export function ParticleBackground() {
         color: colors[Math.floor(Math.random() * colors.length)],
         angle: Math.random() * Math.PI * 2,
         angleSpeed: (Math.random() - 0.5) * 0.02,
+        pulsePhase: Math.random() * Math.PI * 2,
       };
     },
     [colors]
@@ -89,9 +112,18 @@ export function ParticleBackground() {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Update time based on BPM
+      const bpmSpeed = bpmRef.current / 120; // Normalize to 120 BPM baseline
+      timeRef.current += 0.016 * bpmSpeed; // ~60fps frame time scaled by BPM
+
+      // Decay beat pulse
+      beatPulseRef.current *= 0.92;
+
       // Draw large ambient glow
       particlesRef.current.forEach((particle) => {
-        const glowSize = particle.size * 15;
+        // Pulse glow size on beat
+        const beatBoost = 1 + beatPulseRef.current * 0.5;
+        const glowSize = particle.size * 15 * beatBoost;
         const gradient = ctx.createRadialGradient(
           particle.x,
           particle.y,
@@ -127,12 +159,21 @@ export function ParticleBackground() {
           }
         }
 
-        particle.angle += particle.angleSpeed;
-        const waveX = Math.sin(particle.angle) * 0.3;
-        const waveY = Math.cos(particle.angle * 0.7) * 0.3;
+        // BPM-synced angle speed
+        const bpmMultiplier = bpmRef.current / 120;
+        particle.angle += particle.angleSpeed * bpmMultiplier;
+        
+        // BPM-synced wave motion
+        const beatPhase = timeRef.current * Math.PI * 2;
+        const waveX = Math.sin(particle.angle + beatPhase * 0.5) * 0.3 * bpmMultiplier;
+        const waveY = Math.cos(particle.angle * 0.7 + beatPhase * 0.3) * 0.3 * bpmMultiplier;
 
-        particle.x += particle.baseSpeedX + waveX;
-        particle.y += particle.baseSpeedY + waveY;
+        // Beat pulse burst movement
+        const burstX = Math.cos(particle.pulsePhase) * beatPulseRef.current * 3;
+        const burstY = Math.sin(particle.pulsePhase) * beatPulseRef.current * 3;
+
+        particle.x += (particle.baseSpeedX + waveX + burstX) * bpmMultiplier;
+        particle.y += (particle.baseSpeedY + waveY + burstY) * bpmMultiplier;
 
         if (particle.x < -10) particle.x = canvas.width + 10;
         if (particle.x > canvas.width + 10) particle.x = -10;
@@ -141,10 +182,13 @@ export function ParticleBackground() {
 
         ctx.save();
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        // Pulse particle size on beat
+        const pulseSize = particle.size * (1 + beatPulseRef.current * 0.4);
+        ctx.arc(particle.x, particle.y, pulseSize, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
-        ctx.shadowBlur = particle.size * 3;
-        ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+        // Enhanced glow on beat
+        ctx.shadowBlur = particle.size * 3 * (1 + beatPulseRef.current * 2);
+        ctx.shadowColor = `rgba(212, 175, 55, ${0.8 + beatPulseRef.current * 0.2})`;
         ctx.fill();
         ctx.restore();
       });

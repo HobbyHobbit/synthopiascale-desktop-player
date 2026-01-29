@@ -7,6 +7,7 @@ import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { useAppStore } from './store/appStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
+import { useBPMDetector } from './hooks/useBPMDetector';
 import { defaultTracks } from './data/tracks';
 import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff } from 'lucide-react';
 
@@ -57,6 +58,9 @@ function App() {
   } = useAudioPlayer();
   
   const [audioIntensity, setAudioIntensity] = useState(0);
+  
+  // BPM detection for particle sync
+  const { bpm, isBeat, beatInterval } = useBPMDetector(analyser, isPlaying);
 
   // Build trackInfo from audio player state
   const trackInfo: TrackInfo = {
@@ -128,9 +132,9 @@ function App() {
       className={`w-full h-full relative overflow-hidden ${transparentMode ? 'bg-transparent' : 'bg-background'}`}
       style={{ background: transparentMode ? 'transparent' : undefined }}
     >
-      {/* Particle Background */}
+      {/* Particle Background - synced to BPM */}
       {settings.particlesEnabled && !transparentMode && (
-        <ParticleBackground />
+        <ParticleBackground bpm={bpm} isBeat={isBeat} beatInterval={beatInterval} />
       )}
 
       {/* Main Visualizer */}
