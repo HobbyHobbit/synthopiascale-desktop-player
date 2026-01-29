@@ -334,10 +334,7 @@ export function NowPlayingBar({
           {/* Volume */}
           <div className="flex items-center gap-2 group">
             <button
-              onClick={() => {
-                toggleMute();
-                onVolumeChange(muted ? volume : 0);
-              }}
+              onClick={() => toggleMute()}
               className="p-2 text-white/50 hover:text-white/80 transition-colors"
               title={muted ? 'Unmute' : 'Mute'}
             >

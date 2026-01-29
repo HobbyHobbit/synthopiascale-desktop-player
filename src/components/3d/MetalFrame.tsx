@@ -193,6 +193,9 @@ function MiddleGoldPentagon({ quality = 'high', primaryColor = '#d4af37', rotati
     if (rotationEnabled) {
       const t = state.clock.elapsedTime;
       meshRef.current.rotation.z = baseRotation - t * ROTATION_SPEED;
+    } else {
+      // When disabled, keep at base rotation
+      meshRef.current.rotation.z = baseRotation;
     }
   });
 
@@ -229,6 +232,9 @@ function BackSilverPentagon({ quality = 'high', rotationEnabled = true }: { qual
     if (rotationEnabled) {
       const t = state.clock.elapsedTime;
       meshRef.current.rotation.z = baseRotation + t * ROTATION_SPEED;
+    } else {
+      // When disabled, keep at base rotation
+      meshRef.current.rotation.z = baseRotation;
     }
   });
 

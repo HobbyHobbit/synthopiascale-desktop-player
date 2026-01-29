@@ -39,7 +39,7 @@ export function Visualizer({
   }), [quality]);
 
   // Lower DPR significantly for performance mode
-  const dpr = quality === 'high' ? Math.min(window.devicePixelRatio, 1.5) : 1;
+  const dpr = quality === 'high' ? Math.min(window.devicePixelRatio, 1.5) : 0.75;
 
   return (
     <div className="absolute inset-0 w-full h-full">

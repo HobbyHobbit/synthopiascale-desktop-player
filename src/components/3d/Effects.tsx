@@ -7,17 +7,9 @@ export interface EffectsProps {
 }
 
 export function Effects({ quality, intensity = 1 }: EffectsProps) {
+  // In low quality mode, disable all post-processing for maximum performance
   if (quality === 'low') {
-    return (
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.6}
-          luminanceSmoothing={0.9}
-          intensity={0.8 * intensity}
-          mipmapBlur
-        />
-      </EffectComposer>
-    );
+    return null;
   }
 
   return (

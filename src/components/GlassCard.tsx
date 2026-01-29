@@ -20,19 +20,21 @@ export function GlassCard({ children, visible, className = '', intensity = 0 }: 
       className={`
         absolute inset-4 z-30
         rounded-3xl overflow-hidden
-        transition-all duration-100 ease-out
         ${className}
       `}
       style={{
         background: `rgba(0, 0, 0, ${bgOpacity})`,
-        backdropFilter: 'blur(4px)', // Reduced blur for clearer view
-        WebkitBackdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
         border: `1px solid rgba(212, 175, 55, ${borderOpacity})`,
         boxShadow: `
           0 4px 16px 0 rgba(0, 0, 0, 0.1),
           0 0 ${20 + intensity * 40}px rgba(212, 175, 55, ${glowIntensity}),
           inset 0 1px 0 0 rgba(255, 255, 255, 0.1)
         `,
+        willChange: 'transform',
+        transform: 'translateZ(0)',
+        contain: 'layout paint',
       }}
     >
       {/* Subtle crystal edge highlights */}

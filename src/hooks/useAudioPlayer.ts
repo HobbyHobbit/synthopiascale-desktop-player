@@ -62,6 +62,7 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     queue,
     queueIndex,
     library,
+    muted,
     setQueueIndex,
     getNextTrackIndex,
     getPrevTrackIndex,
@@ -333,6 +334,13 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  // Sync muted state to audio element
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = muted;
+    }
+  }, [muted]);
 
   // Save session periodically
   useEffect(() => {

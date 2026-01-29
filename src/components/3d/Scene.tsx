@@ -34,7 +34,7 @@ export const Scene = memo(function Scene({
   quality,
   intensity,
   primaryColor,
-  showGlassCard,
+  showGlassCard: _showGlassCard,
   plasmaEnabled,
   rotationEnabled,
   visualizerType,
@@ -87,8 +87,8 @@ export const Scene = memo(function Scene({
 
       {/* Logo Group */}
       <group ref={logoGroupRef}>
-        {/* Audio Visualizer - shown when GlassCard hidden OR plasma explicitly enabled */}
-        {(!showGlassCard || plasmaEnabled) && visualizerType === 'plasma' && (
+        {/* Audio Visualizer - shown when plasmaEnabled is true (independent of glassCard) */}
+        {plasmaEnabled && visualizerType === 'plasma' && (
           <AudioVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}
@@ -96,7 +96,7 @@ export const Scene = memo(function Scene({
             primaryColor={primaryColor}
           />
         )}
-        {(!showGlassCard || plasmaEnabled) && visualizerType === 'fire' && (
+        {plasmaEnabled && visualizerType === 'fire' && (
           <FireVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}
@@ -104,7 +104,7 @@ export const Scene = memo(function Scene({
             primaryColor={primaryColor}
           />
         )}
-        {(!showGlassCard || plasmaEnabled) && visualizerType === 'water' && (
+        {plasmaEnabled && visualizerType === 'water' && (
           <WaterVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}

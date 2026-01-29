@@ -18,6 +18,40 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   } : { r: 0.4, g: 0.7, b: 1 };
 }
 
+// Create a circular bubble texture
+function createBubbleTexture(): THREE.Texture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, 64, 64);
+  
+  // Draw bubble with gradient for 3D effect
+  const gradient = ctx.createRadialGradient(28, 28, 0, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+  gradient.addColorStop(0.2, 'rgba(200, 230, 255, 0.7)');
+  gradient.addColorStop(0.5, 'rgba(150, 200, 255, 0.5)');
+  gradient.addColorStop(0.8, 'rgba(100, 180, 255, 0.3)');
+  gradient.addColorStop(1, 'rgba(80, 150, 255, 0)');
+  
+  ctx.beginPath();
+  ctx.arc(32, 32, 30, 0, Math.PI * 2);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  
+  // Add highlight
+  ctx.beginPath();
+  ctx.arc(24, 24, 8, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.fill();
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 interface Bubble {
   x: number;
   y: number;
@@ -30,9 +64,10 @@ interface Bubble {
   life: number;
   maxLife: number;
   angle: number;
+  active: boolean;
 }
 
-const BUBBLE_COUNT = 150;
+const MAX_BUBBLES = 400;
 
 export function WaterVisualizer3D({
   analyser,
@@ -45,18 +80,24 @@ export function WaterVisualizer3D({
   const timeRef = useRef(0);
   const audioIntensityRef = useRef(0);
 
+  // Bubble count scales with intensity setting (50 base + up to 350 more)
+  const activeBubbleCount = Math.floor(50 + globalIntensity * 350);
+
+  // Create bubble texture once
+  const bubbleTexture = useMemo(() => createBubbleTexture(), []);
+
   const { positions, colors, sizes } = useMemo(() => {
-    const positions = new Float32Array(BUBBLE_COUNT * 3);
-    const colors = new Float32Array(BUBBLE_COUNT * 3);
-    const sizes = new Float32Array(BUBBLE_COUNT);
+    const positions = new Float32Array(MAX_BUBBLES * 3);
+    const colors = new Float32Array(MAX_BUBBLES * 3);
+    const sizes = new Float32Array(MAX_BUBBLES);
     return { positions, colors, sizes };
   }, []);
 
   useEffect(() => {
-    bubblesRef.current = Array.from({ length: BUBBLE_COUNT }, () => createBubble());
+    bubblesRef.current = Array.from({ length: MAX_BUBBLES }, () => createBubble(false));
   }, []);
 
-  const createBubble = (): Bubble => {
+  const createBubble = (active: boolean): Bubble => {
     const angle = Math.random() * Math.PI * 2;
     const radius = 0.06 + Math.random() * 0.04;
     return {
@@ -65,12 +106,13 @@ export function WaterVisualizer3D({
       z: -0.03 + Math.random() * 0.06,
       vx: 0,
       vy: 0,
-      size: 0.015 + Math.random() * 0.025,
+      size: 0.02 + Math.random() * 0.03,
       wobblePhase: Math.random() * Math.PI * 2,
       wobbleSpeed: 3 + Math.random() * 4,
       life: Math.random(),
       maxLife: 1 + Math.random() * 1.5,
       angle: angle,
+      active: active,
     };
   };
 
@@ -84,12 +126,13 @@ export function WaterVisualizer3D({
     b.z = -0.03 + Math.random() * 0.06;
     b.vx = Math.cos(angle) * speed * (0.6 + Math.random() * 0.8);
     b.vy = Math.sin(angle) * speed * (0.6 + Math.random() * 0.8);
-    b.size = 0.012 + Math.random() * 0.028 + audioIntensity * 0.015;
+    b.size = 0.018 + Math.random() * 0.035 + audioIntensity * 0.02;
     b.wobblePhase = Math.random() * Math.PI * 2;
     b.wobbleSpeed = 3 + Math.random() * 4;
     b.life = 0;
     b.maxLife = 0.8 + Math.random() * 1.2 + audioIntensity * 0.4;
     b.angle = angle;
+    b.active = true;
   };
 
   useFrame((_, delta) => {
@@ -117,19 +160,29 @@ export function WaterVisualizer3D({
     const baseColor = hexToRgb(primaryColor);
     const bubbles = bubblesRef.current;
 
-    for (let i = 0; i < BUBBLE_COUNT; i++) {
+    for (let i = 0; i < MAX_BUBBLES; i++) {
       const b = bubbles[i];
+      const shouldBeActive = i < activeBubbleCount;
       
       // Update life
       b.life += delta;
       
-      // Reset dead bubbles
-      if (b.life >= b.maxLife) {
-        if (audioIntensity > 0.03 || isPlaying) {
+      // Reset dead bubbles or activate/deactivate based on count
+      if (b.life >= b.maxLife || (!b.active && shouldBeActive)) {
+        if ((audioIntensity > 0.03 || isPlaying) && shouldBeActive) {
           resetBubble(b, audioIntensity);
         } else {
+          b.active = false;
           b.life = b.maxLife;
         }
+      }
+
+      if (!b.active) {
+        positions[i * 3] = 0;
+        positions[i * 3 + 1] = 0;
+        positions[i * 3 + 2] = -10;
+        sizes[i] = 0;
+        continue;
       }
 
       const lifeRatio = b.life / b.maxLife;
@@ -189,28 +242,29 @@ export function WaterVisualizer3D({
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={BUBBLE_COUNT}
+          count={MAX_BUBBLES}
           array={positions}
           itemSize={3}
         />
         <bufferAttribute
           attach="attributes-color"
-          count={BUBBLE_COUNT}
+          count={MAX_BUBBLES}
           array={colors}
           itemSize={3}
         />
         <bufferAttribute
           attach="attributes-size"
-          count={BUBBLE_COUNT}
+          count={MAX_BUBBLES}
           array={sizes}
           itemSize={1}
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.06}
+        size={0.08}
+        map={bubbleTexture}
         vertexColors
         transparent
-        opacity={0.85}
+        opacity={0.9}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         sizeAttenuation
