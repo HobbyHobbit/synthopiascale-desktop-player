@@ -10,6 +10,7 @@ export interface VisualizerProps {
   primaryColor: string;
   quality: 'low' | 'high';
   plasmaEnabled: boolean;
+  showGlassCard: boolean;
 }
 
 export function Visualizer({
@@ -19,6 +20,7 @@ export function Visualizer({
   primaryColor,
   quality,
   plasmaEnabled,
+  showGlassCard,
 }: VisualizerProps) {
   // Memoize GL config to prevent re-creation
   const glConfig = useMemo(() => ({
@@ -53,6 +55,7 @@ export function Visualizer({
             intensity={intensity}
             primaryColor={primaryColor}
             plasmaEnabled={plasmaEnabled}
+            showGlassCard={showGlassCard}
           />
         </Suspense>
         {quality === 'high' && <Preload all />}
