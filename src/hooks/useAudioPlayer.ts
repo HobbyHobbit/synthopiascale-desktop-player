@@ -108,7 +108,10 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.crossOrigin = 'anonymous';
+      // Only set crossOrigin for http/https, not file:// protocol
+      if (window.location.protocol !== 'file:') {
+        audioRef.current.crossOrigin = 'anonymous';
+      }
       
       // Time update handler
       audioRef.current.addEventListener('timeupdate', () => {
@@ -181,18 +184,26 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
 
-      const source = audioContext.createMediaElementSource(audioRef.current);
-      sourceRef.current = source;
+      // For file:// protocol, we need to handle CORS differently
+      // The audio will still play but visualization might be limited
+      try {
+        const source = audioContext.createMediaElementSource(audioRef.current);
+        sourceRef.current = source;
 
-      const analyserNode = audioContext.createAnalyser();
-      analyserNode.fftSize = 256;
-      analyserNode.smoothingTimeConstant = 0.8;
-      analyserRef.current = analyserNode;
+        const analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.smoothingTimeConstant = 0.8;
+        analyserRef.current = analyserNode;
 
-      source.connect(analyserNode);
-      analyserNode.connect(audioContext.destination);
+        source.connect(analyserNode);
+        analyserNode.connect(audioContext.destination);
 
-      setAnalyser(analyserNode);
+        setAnalyser(analyserNode);
+      } catch (sourceError) {
+        // If createMediaElementSource fails (CORS), just connect audio directly
+        console.warn('Audio visualization not available for local files:', sourceError);
+        // Audio will still play through the audio element
+      }
     } catch (error) {
       console.error('Failed to setup audio context:', error);
     }

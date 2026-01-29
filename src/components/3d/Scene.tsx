@@ -79,8 +79,8 @@ export const Scene = memo(function Scene({
 
       {/* Logo Group */}
       <group ref={logoGroupRef}>
-        {/* Audio Visualizer - only when playing AND plasma enabled AND high quality */}
-        {plasmaEnabled && quality === 'high' && (
+        {/* Audio Visualizer - essential branding, always shown when plasma enabled */}
+        {plasmaEnabled && (
           <AudioVisualizer3D
             analyser={analyser}
             isPlaying={isPlaying}

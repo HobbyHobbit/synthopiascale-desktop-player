@@ -71,6 +71,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: isDev ? true : false, // Allow loading local audio files in packaged app
     },
     icon: iconPath,
     title: 'SynthopiaScale Desktop Visualizer',
