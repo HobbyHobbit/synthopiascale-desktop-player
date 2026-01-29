@@ -5,11 +5,15 @@ import { ControlBar } from './components/ControlBar';
 import { ParticleBackground } from './components/ParticleBackground';
 import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
+import { LibraryPanel } from './components/LibraryPanel';
+import { NowPlayingBar } from './components/NowPlayingBar';
 import { useAppStore } from './store/appStore';
+import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useBPMDetector } from './hooks/useBPMDetector';
+import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
 import { defaultTracks } from './data/tracks';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -41,9 +45,12 @@ declare global {
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [transparentMode, setTransparentMode] = useState(false);
+  const [studioMode, setStudioMode] = useState(false); // Full visualizer mode
   const { settings, loadSettings, setSettings } = useAppStore();
+  const { volume, muted, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
   const { 
     isPlaying, 
     currentTrack, 
@@ -55,6 +62,7 @@ function App() {
     nextTrack,
     prevTrack,
     seek,
+    setVolume,
   } = useAudioPlayer();
   
   const [audioIntensity, setAudioIntensity] = useState(0);
@@ -126,6 +134,58 @@ function App() {
     }
   }, [isFullscreen]);
 
+  // Volume handlers
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    setVolume(newVolume);
+    setStoreVolume(newVolume);
+  }, [setVolume, setStoreVolume]);
+
+  const handleVolumeUp = useCallback(() => {
+    handleVolumeChange(Math.min(1, volume + 0.1));
+  }, [handleVolumeChange, volume]);
+
+  const handleVolumeDown = useCallback(() => {
+    handleVolumeChange(Math.max(0, volume - 0.1));
+  }, [handleVolumeChange, volume]);
+
+  const handleSeekForward = useCallback(() => {
+    seek(Math.min(duration, currentTime + 5));
+  }, [seek, duration, currentTime]);
+
+  const handleSeekBackward = useCallback(() => {
+    seek(Math.max(0, currentTime - 5));
+  }, [seek, currentTime]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onPlayPause: togglePlay,
+    onNext: nextTrack,
+    onPrevious: prevTrack,
+    onVolumeUp: handleVolumeUp,
+    onVolumeDown: handleVolumeDown,
+    onMute: toggleMute,
+    onToggleLibrary: () => setShowLibrary(prev => !prev),
+    onToggleSettings: () => setShowSettings(prev => !prev),
+    onToggleFullscreen: toggleFullscreen,
+    onSeekForward: handleSeekForward,
+    onSeekBackward: handleSeekBackward,
+  });
+
+  // Media session for system media controls
+  useMediaSession(
+    currentTrack?.title || 'No Track',
+    currentTrack?.artist || 'SynthopiaScale Records',
+    isPlaying
+  );
+
+  // Now playing bar track info (extended)
+  const nowPlayingTrackInfo = currentTrack ? {
+    title: currentTrack.title,
+    artist: currentTrack.artist,
+    duration: duration || currentTrack.duration,
+    bpm: bpm > 0 ? bpm : undefined,
+    source: 'builtin' as const,
+  } : null;
 
   return (
     <div 
@@ -178,6 +238,13 @@ function App() {
       {/* Top Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
         <button
+          onClick={() => setShowLibrary(prev => !prev)}
+          className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${showLibrary ? 'bg-gold/20' : ''}`}
+          title="Library (Ctrl+L)"
+        >
+          <ListMusic className={`w-5 h-5 ${showLibrary ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
+        </button>
+        <button
           onClick={toggleUIVisibility}
           className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
           title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
@@ -191,14 +258,14 @@ function App() {
         <button
           onClick={() => setShowSettings(true)}
           className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-          title="Settings"
+          title="Settings (Ctrl+,)"
         >
           <SettingsIcon className="w-5 h-5 text-foreground/70 hover:text-foreground" />
         </button>
         <button
           onClick={toggleFullscreen}
           className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          title={isFullscreen ? 'Exit Fullscreen (F11)' : 'Fullscreen (F11)'}
         >
           {isFullscreen ? (
             <Minimize2 className="w-5 h-5 text-foreground/70 hover:text-foreground" />
@@ -221,6 +288,38 @@ function App() {
       {/* Settings Panel */}
       {showSettings && (
         <SettingsPanel onClose={() => setShowSettings(false)} />
+      )}
+
+      {/* Library Panel */}
+      <LibraryPanel
+        visible={showLibrary}
+        onClose={() => setShowLibrary(false)}
+        onPlayTrack={(trackId) => {
+          // For now, find track index from defaultTracks
+          const index = defaultTracks.findIndex(t => String(t.id) === trackId);
+          if (index !== -1) {
+            // Would need to extend useAudioPlayer to support this
+            console.log('Play track:', trackId, index);
+          }
+        }}
+        currentTrackId={currentTrack ? String(currentTrack.id) : undefined}
+        isPlaying={isPlaying}
+      />
+
+      {/* Now Playing Bar - shown in studio mode or when glass card is hidden */}
+      {(studioMode || !settings.showGlassCard) && !transparentMode && (
+        <NowPlayingBar
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          trackInfo={nowPlayingTrackInfo}
+          onPlayPause={togglePlay}
+          onPrevious={prevTrack}
+          onNext={nextTrack}
+          onSeek={seek}
+          onVolumeChange={handleVolumeChange}
+          onOpenLibrary={() => setShowLibrary(true)}
+          onToggleFullVisualizer={() => setStudioMode(prev => !prev)}
+        />
       )}
     </div>
   );
