@@ -151,9 +151,21 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
         }
       });
 
-      // Error handler
-      audioRef.current.addEventListener('error', (e) => {
-        console.error('Audio error:', e);
+      // Error handler with detailed error info
+      audioRef.current.addEventListener('error', () => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        
+        const error = audio.error;
+        if (error) {
+          const errorMessages: Record<number, string> = {
+            1: 'MEDIA_ERR_ABORTED - Playback aborted by user',
+            2: 'MEDIA_ERR_NETWORK - Network error',
+            3: 'MEDIA_ERR_DECODE - Media decoding failed',
+            4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Source not supported',
+          };
+          console.error('Audio error:', errorMessages[error.code] || `Unknown error code: ${error.code}`, audio.src);
+        }
       });
     }
 
