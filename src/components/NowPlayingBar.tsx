@@ -12,7 +12,6 @@ import {
   Volume1,
   ListMusic,
   Maximize2,
-  Info,
 } from 'lucide-react';
 import { usePlaylistStore, RepeatMode } from '../store/playlistStore';
 

@@ -5,6 +5,19 @@ node_modules/
 dist/
 release/
 out/
+build-output/
+
+# Installer/Binary outputs - NEVER commit these
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+*.snap
+*.blockmap
+*.yml
+!.github/**/*.yml
 
 # IDE
 .vscode/
@@ -15,10 +28,13 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Environment
 .env
@@ -27,6 +43,15 @@ npm-debug.log*
 
 # Electron
 *.unpacked
+electron-builder-effective-config.yaml
 
 # TypeScript
 *.tsbuildinfo
+
+# Cache
+.cache/
+.parcel-cache/
+.npm/
+
+# Test coverage
+coverage/

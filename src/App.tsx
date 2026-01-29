@@ -55,7 +55,7 @@ function App() {
   const [transparentMode, setTransparentMode] = useState(false);
   const [studioMode, setStudioMode] = useState(false); // Full visualizer mode
   const { settings, loadSettings, setSettings } = useAppStore();
-  const { volume, muted, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
+  const { volume, setVolume: setStoreVolume, toggleMute } = usePlaylistStore();
   const { 
     isPlaying, 
     currentTrack, 

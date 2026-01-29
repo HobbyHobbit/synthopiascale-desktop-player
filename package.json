@@ -1,9 +1,9 @@
 {
-  "name": "synthopiascale-desktop-visualizer",
-  "productName": "SynthopiaScale Desktop Visualizer",
+  "name": "synthopiascale-desktop-player",
+  "productName": "SynthopiaScale Desktop Player",
   "version": "1.0.0",
   "type": "module",
-  "description": "Audio-reactive 3D visualizer featuring the SynthopiaScale Records logo with plasma effects, glass morphism, and real-time audio analysis",
+  "description": "Premium audio player and visualizer by SynthopiaScale Records with 3D visualization, 10-band EQ, theme system, and library management",
   "main": "dist/electron/main.js",
   "author": {
     "name": "SynthopiaScale Records",
@@ -21,10 +21,9 @@
     "build": "tsc && vite build && npm run build:electron",
     "build:electron": "tsc -p tsconfig.electron.json",
     "preview": "vite preview",
-    "package": "npm run build && electron-builder --win",
-    "package:dir": "npm run build && electron-builder --win --dir",
-    "package:scr": "npm run build && npm run build:screensaver && electron-builder --win",
-    "build:screensaver": "tsc electron/screensaver.ts --outDir dist/electron --esModuleInterop --skipLibCheck",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir",
+    "package": "npm run dist",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -57,9 +56,9 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.synthopiascale.desktop-visualizer",
-    "productName": "SynthopiaScale Desktop Visualizer",
-    "copyright": "Copyright © 2024 SynthopiaScale Records",
+    "appId": "com.synthopiascale.desktop-player",
+    "productName": "SynthopiaScale Desktop Player",
+    "copyright": "Copyright © 2025 SynthopiaScale Records",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -88,22 +87,11 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": true,
+      "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SynthopiaScale Visualizer",
-      "include": "build/installer.nsh"
-    },
-    "extraFiles": [
-      {
-        "from": "wallpaper-engine",
-        "to": "wallpaper-engine"
-      }
-    ],
-    "publish": {
-      "provider": "github",
-      "owner": "HobbyHobbit",
-      "repo": "synthopiascale-desktop-player"
+      "shortcutName": "SynthopiaScale Desktop Player",
+      "uninstallDisplayName": "SynthopiaScale Desktop Player"
     }
   }
 }

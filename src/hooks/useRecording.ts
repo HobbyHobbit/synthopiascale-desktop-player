@@ -36,45 +36,15 @@ export function useRecording(): UseRecordingReturn {
       chunksRef.current = [];
       gifFramesRef.current = [];
 
-      // Use Electron's desktopCapturer if available
-      let stream: MediaStream;
-
-      if (window.electronAPI?.getDesktopSources) {
-        // Get sources from Electron
-        const sources = await window.electronAPI.getDesktopSources();
-        const currentWindow = sources.find((s: { name: string }) => 
-          s.name.includes('SynthopiaScale') || s.name.includes('Electron')
-        ) || sources[0];
-
-        if (currentWindow) {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              // @ts-expect-error - Electron-specific constraint
-              mandatory: {
-                chromeMediaSource: 'desktop',
-                chromeMediaSourceId: currentWindow.id,
-                minWidth: 1280,
-                maxWidth: 1920,
-                minHeight: 720,
-                maxHeight: 1080,
-              },
-            },
-          });
-        } else {
-          throw new Error('No capture source found');
-        }
-      } else {
-        // Fallback to getDisplayMedia for browser/web
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30 },
-          },
-          audio: false,
-        });
-      }
+      // Use getDisplayMedia for screen capture
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30 },
+        },
+        audio: false,
+      });
 
       streamRef.current = stream;
 
