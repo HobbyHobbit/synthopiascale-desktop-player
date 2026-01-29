@@ -101,11 +101,11 @@ export function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
             <div className="flex items-start gap-3">
               <Heart className="w-5 h-5 text-gold mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-medium text-gold mb-1">Pay What You Want</h3>
+                <h3 className="font-medium text-gold mb-1">Thank You!</h3>
                 <p className="text-sm text-white/70 leading-relaxed">
-                  This visualizer is free to use. If you enjoy it, consider supporting 
-                  the independent label behind it. Every contribution helps us create 
-                  more tools and music for the community.
+                  Thank you for supporting SynthopiaScale Records! Your purchase helps us 
+                  create more tools and music for the community. Visit our website for 
+                  more music, artists, and products.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button
@@ -113,14 +113,7 @@ export function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
                     className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-gold/20 hover:bg-gold/30 text-gold transition-colors"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Support & Contact
-                  </button>
-                  <button
-                    onClick={() => openExternal('https://synthopiascale.com/products')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
-                  >
-                    <Music className="w-4 h-4" />
-                    More Products
+                    SynthopiaScale.com
                   </button>
                 </div>
               </div>

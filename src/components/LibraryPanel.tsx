@@ -207,9 +207,13 @@ export function LibraryPanel({
         });
         // Replace queue with new tracks and start at first track
         setQueue(trackIds, 0);
+        // Auto-play first track
+        if (trackIds.length > 0) {
+          setTimeout(() => onPlayTrack(trackIds[0]), 100);
+        }
       }
     }
-  }, [addToLibrary, setQueue]);
+  }, [addToLibrary, setQueue, onPlayTrack]);
 
   const handleImportM3U = useCallback(() => {
     const input = document.createElement('input');
@@ -245,19 +249,13 @@ export function LibraryPanel({
     [queue, setQueueIndex, onPlayTrack]
   );
 
-  const handleLibraryTrackPlay = useCallback(
+  const handlePlayNow = useCallback(
     (trackId: string) => {
-      // Add track to queue and play immediately
-      addToQueue([trackId], 'next');
-      // Use setTimeout to ensure queue state is updated before playing
-      setTimeout(() => {
-        const state = usePlaylistStore.getState();
-        const newIndex = state.queueIndex + 1;
-        setQueueIndex(newIndex);
-        onPlayTrack(trackId);
-      }, 0);
+      // Clear queue and play this track immediately
+      setQueue([trackId], 0);
+      setTimeout(() => onPlayTrack(trackId), 100);
     },
-    [addToQueue, setQueueIndex, onPlayTrack]
+    [setQueue, onPlayTrack]
   );
 
   if (!visible) return null;
@@ -320,7 +318,7 @@ export function LibraryPanel({
           ${isDragging ? 'opacity-50 scale-95' : ''}
           ${isDragOver ? 'border-t-2 border-gold' : ''}
         `}
-        onClick={() => (isQueueView ? handleQueueTrackClick(index) : handleLibraryTrackPlay(track.id))}
+        onClick={() => (isQueueView ? handleQueueTrackClick(index) : handlePlayNow(track.id))}
         onContextMenu={(e) => handleContextMenu(e, track.id, playlistId)}
       >
         {/* Drag Handle (Queue only) */}
@@ -348,7 +346,7 @@ export function LibraryPanel({
                   if (isQueueView) {
                     handleQueueTrackClick(index);
                   } else {
-                    handleLibraryTrackPlay(track.id);
+                    handlePlayNow(track.id);
                   }
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -706,12 +704,12 @@ export function LibraryPanel({
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
                   onClick={() => {
-                    addToQueue([contextMenu.trackId!], 'next');
+                    handlePlayNow(contextMenu.trackId!);
                     closeContextMenu();
                   }}
                 >
                   <Play className="w-4 h-4" />
-                  Play Next
+                  Play
                 </button>
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
