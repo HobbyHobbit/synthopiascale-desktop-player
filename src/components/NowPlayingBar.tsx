@@ -136,10 +136,14 @@ export function NowPlayingBar({
   const handleVolumeChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newVolume = parseFloat(e.target.value);
+      // Unmute if changing volume while muted
+      if (muted && newVolume > 0) {
+        toggleMute();
+      }
       setVolume(newVolume);
       onVolumeChange(newVolume);
     },
-    [setVolume, onVolumeChange]
+    [setVolume, onVolumeChange, muted, toggleMute]
   );
 
   const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;

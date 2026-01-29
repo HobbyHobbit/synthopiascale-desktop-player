@@ -28,13 +28,13 @@ export interface Settings {
 }
 
 // Settings that are automatically disabled in performance mode
+// Note: showEQBars is NOT disabled - it's the visual performance feature that stays on
 const PERFORMANCE_MODE_DISABLED_SETTINGS: (keyof Settings)[] = [
   'particlesEnabled',
   'particleHoverEnabled',
   'rotationEnabled',
   'showGlassCard',
   'showBranding',
-  'showEQBars',
 ];
 
 interface AppState {
@@ -104,7 +104,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         settingsToSave[key] = state.settings[key] as never;
       }
       
-      // Disable all performance-heavy features
+      // Disable performance-heavy features but keep EQ bars as visual feature
       const performanceSettings: Partial<Settings> = {
         quality: 'low',
         particlesEnabled: false,
@@ -112,7 +112,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         rotationEnabled: false,
         showGlassCard: false,
         showBranding: false,
-        showEQBars: false,
+        // showEQBars stays enabled - it's the visual performance feature
       };
       
       set({

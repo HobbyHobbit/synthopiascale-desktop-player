@@ -326,7 +326,7 @@ function App() {
 
       {/* Branding (when glass card is hidden and not fullscreen) */}
       {!settings.showGlassCard && !isFullscreen && (
-        <div className="absolute bottom-20 left-4 z-40">
+        <div className="absolute bottom-32 left-4 z-40">
           <h1 className="text-lg font-semibold text-foreground/80">
             <span className="text-primary-solid">SynthopiaScale</span> Records
           </h1>

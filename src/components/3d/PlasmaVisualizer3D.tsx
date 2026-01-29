@@ -1,7 +1,7 @@
 // Plasma/Lightning bolt visualizer
 // Refactored to use shared audio hook for consistent behavior
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
 import { Line } from '@react-three/drei';
@@ -101,7 +101,7 @@ export function PlasmaVisualizer3D({
   const groupRef = useRef<Group>(null);
   const timeRef = useRef(0);
   const frequencyDataRef = useRef<number[]>([]);
-  const renderKeyRef = useRef(0);
+  const [, forceUpdate] = useState(0);
 
   // Intensity controls visible bolt count
   const baseTendrilCount = 72;
@@ -109,7 +109,7 @@ export function PlasmaVisualizer3D({
 
   // Initialize frequency data
   if (frequencyDataRef.current.length === 0) {
-    frequencyDataRef.current = new Array(baseTendrilCount).fill(0);
+    frequencyDataRef.current = new Array(baseTendrilCount).fill(0.15);
   }
 
   useFrame((_, delta) => {
@@ -137,14 +137,14 @@ export function PlasmaVisualizer3D({
       // Idle animation - always show bolts with ambient movement
       for (let i = 0; i < baseTendrilCount; i++) {
         const idleIntensity = 0.18 + Math.sin(time * 2 + i * 0.25) * 0.1;
-        // Smooth transition: if playing stopped, fade to idle; if never played, show idle immediately
         const target = idleIntensity;
         const current = frequencyDataRef.current[i];
         frequencyDataRef.current[i] = current > target ? current * 0.95 : target;
       }
     }
 
-    renderKeyRef.current++;
+    // Force React re-render every frame
+    forceUpdate(n => n + 1);
   });
 
   const tendrils = useMemo(() => {
@@ -169,7 +169,7 @@ export function PlasmaVisualizer3D({
         const color = getPlasmaColor(intensity, t.colorIndex * 137, primaryColor);
         const points = generatePlasmaLightning(t.angle, length, intensity, timeRef.current, t.colorIndex * 137);
 
-        return <Line key={`${i}-${renderKeyRef.current}`} points={points} color={color} lineWidth={0.3 + intensity * 0.225} />;
+        return <Line key={i} points={points} color={color} lineWidth={0.3 + intensity * 0.225} />;
       })}
     </group>
   );

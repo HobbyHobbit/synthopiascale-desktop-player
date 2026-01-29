@@ -328,7 +328,7 @@ export function LibraryPanel({
         )}
 
         {/* Track Number / Playing Indicator */}
-        <div className="w-6 text-center">
+        <div className="w-6 text-center relative">
           {isCurrentTrack && isPlaying ? (
             <div className="flex items-center justify-center gap-0.5">
               <div className="w-1 h-3 bg-gold animate-pulse" />
@@ -336,26 +336,27 @@ export function LibraryPanel({
               <div className="w-1 h-2 bg-gold animate-pulse delay-150" />
             </div>
           ) : (
-            <span className="text-white/40 text-sm group-hover:hidden">
-              {isQueueView ? queuePosition + 1 : index + 1}
-            </span>
-          )}
-          {!isCurrentTrack && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isQueueView) {
-                  handleQueueTrackClick(index);
-                } else {
-                  handleLibraryTrackPlay(track.id);
-                }
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="hidden group-hover:flex items-center justify-center w-6 h-6 hover:scale-110 transition-transform z-10"
-            >
-              <Play className="w-4 h-4 text-white/60 hover:text-white fill-current" />
-            </button>
+            <>
+              <span className="text-white/40 text-sm group-hover:opacity-0 transition-opacity">
+                {isQueueView ? queuePosition + 1 : index + 1}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isQueueView) {
+                    handleQueueTrackClick(index);
+                  } else {
+                    handleLibraryTrackPlay(track.id);
+                  }
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              >
+                <Play className="w-4 h-4 text-white/80 hover:text-white fill-current hover:scale-110 transition-transform" />
+              </button>
+            </>
           )}
         </div>
 
