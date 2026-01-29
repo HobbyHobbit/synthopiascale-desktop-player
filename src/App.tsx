@@ -9,6 +9,7 @@ import { LibraryPanel } from './components/LibraryPanel';
 import { NowPlayingBar } from './components/NowPlayingBar';
 import { HelpOverlay } from './components/HelpOverlay';
 import { EQPanel } from './components/EQPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
@@ -208,15 +209,17 @@ function App() {
         <ParticleBackground bpm={bpm} isBeat={isBeat} beatInterval={beatInterval} />
       )}
 
-      {/* Main Visualizer */}
-      <Visualizer 
-        analyser={analyser} 
-        isPlaying={isPlaying}
-        intensity={settings.intensity}
-        primaryColor={settings.primaryColor}
-        quality={settings.quality}
-        plasmaEnabled={settings.plasmaEnabled}
-      />
+      {/* Main Visualizer with Error Boundary */}
+      <ErrorBoundary>
+        <Visualizer 
+          analyser={analyser} 
+          isPlaying={isPlaying}
+          intensity={settings.intensity}
+          primaryColor={settings.primaryColor}
+          quality={settings.quality}
+          plasmaEnabled={settings.plasmaEnabled}
+        />
+      </ErrorBoundary>
 
       {/* Glass Card Overlay with Audio Player UI */}
       <GlassCard visible={settings.showGlassCard && !transparentMode} intensity={audioIntensity}>

@@ -489,6 +489,24 @@ export const usePlaylistStore = create<PlaylistState>()(
         lastTrackId: state.lastTrackId,
         lastPosition: state.lastPosition,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Migrate old absolute paths to relative paths
+        if (state?.library) {
+          const library = state.library;
+          let needsMigration = false;
+          
+          Object.values(library).forEach((track) => {
+            if (track.src.startsWith('/tracks/')) {
+              track.src = '.' + track.src; // /tracks/ -> ./tracks/
+              needsMigration = true;
+            }
+          });
+          
+          if (needsMigration) {
+            console.log('Migrated library paths from absolute to relative');
+          }
+        }
+      },
     }
   )
 );
