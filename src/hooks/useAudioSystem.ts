@@ -157,21 +157,6 @@ export function useAudioSystem(): AudioSystemState {
           }
           break;
 
-        case 'spotify':
-        case 'tidal':
-          // For streaming services, we'd need their SDK integration
-          // For now, fall back to system audio
-          console.info(`${settings.audioSource} integration requires API setup. Using system audio.`);
-          try {
-            stream = await navigator.mediaDevices.getDisplayMedia({
-              audio: true,
-              video: { width: 1, height: 1, frameRate: 1 },
-            });
-            stream.getVideoTracks().forEach(track => track.stop());
-          } catch {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          }
-          break;
 
         default:
           stream = await navigator.mediaDevices.getUserMedia({ audio: true });

@@ -52,6 +52,7 @@
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
     "postcss": "^8.4.33",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
@@ -79,10 +80,12 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "build/icon.png",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AudioSource = 'system' | 'microphone' | 'midi' | 'spotify' | 'tidal';
+export type AudioSource = 'system' | 'microphone' | 'midi';
 export type Quality = 'low' | 'high';
 
 export interface Settings {
@@ -8,7 +8,6 @@ export interface Settings {
   intensity: number;
   primaryColor: string;
   quality: Quality;
-  particlesEnabled: boolean;
   plasmaEnabled: boolean;
   alwaysOnTop: boolean;
   recordingEnabled: boolean;
@@ -48,7 +47,6 @@ const defaultSettings: Settings = {
   intensity: 1.0,
   primaryColor: '#d4af37',
   quality: 'high',
-  particlesEnabled: true,
   plasmaEnabled: true,
   alwaysOnTop: false,
   recordingEnabled: false,

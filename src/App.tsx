@@ -1,8 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Visualizer } from './components/Visualizer';
 import { SettingsPanel } from './components/SettingsPanel';
-import { ControlBar } from './components/ControlBar';
-import { ParticleBackground } from './components/ParticleBackground';
 import { GlassCard } from './components/GlassCard';
 import { AudioPlayerUI, TrackInfo } from './components/AudioPlayerUI';
 import { LibraryPanel } from './components/LibraryPanel';
@@ -13,9 +11,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAppStore } from './store/appStore';
 import { usePlaylistStore } from './store/playlistStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
-import { useBPMDetector } from './hooks/useBPMDetector';
 import { useKeyboardShortcuts, useMediaSession } from './hooks/useKeyboardShortcuts';
-import { Settings as SettingsIcon, Minimize2, Maximize2, Eye, EyeOff, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, Minimize2, Maximize2, Zap, ListMusic, HelpCircle, Play, Pause, SkipBack, SkipForward, Sliders } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -77,8 +74,6 @@ function App() {
   
   const [audioIntensity, setAudioIntensity] = useState(0);
   
-  // BPM detection for particle sync
-  const { bpm, isBeat, beatInterval } = useBPMDetector(analyser, isPlaying);
 
   // Build trackInfo from audio player state
   const trackInfo: TrackInfo = {
@@ -119,8 +114,13 @@ function App() {
     return () => cancelAnimationFrame(animationId);
   }, [analyser, isPlaying]);
 
-  const toggleUIVisibility = useCallback(() => {
-    setSettings({ showGlassCard: !settings.showGlassCard });
+  // Performance mode: enables glass card overlay and sets low quality for smooth playback
+  const togglePerformanceMode = useCallback(() => {
+    const newPerformanceMode = !settings.showGlassCard;
+    setSettings({ 
+      showGlassCard: newPerformanceMode,
+      quality: newPerformanceMode ? 'low' : 'high'
+    });
   }, [settings.showGlassCard, setSettings]);
 
   useEffect(() => {
@@ -195,7 +195,6 @@ function App() {
     title: currentTrack.title,
     artist: currentTrack.artist,
     duration: duration || currentTrack.duration,
-    bpm: bpm > 0 ? bpm : undefined,
     source: 'builtin' as const,
   } : null;
 
@@ -204,11 +203,6 @@ function App() {
       className={`w-full h-full relative overflow-hidden ${transparentMode ? 'bg-transparent' : 'bg-background'}`}
       style={{ background: transparentMode ? 'transparent' : undefined }}
     >
-      {/* Particle Background - synced to BPM */}
-      {settings.particlesEnabled && !transparentMode && (
-        <ParticleBackground bpm={bpm} isBeat={isBeat} beatInterval={beatInterval} />
-      )}
-
       {/* Main Visualizer with Error Boundary */}
       <ErrorBoundary>
         <Visualizer 
@@ -239,16 +233,6 @@ function App() {
         />
       </GlassCard>
 
-      {/* Minimal Control Bar (when glass card is hidden) */}
-      {!settings.showGlassCard && (
-        <ControlBar 
-          isPlaying={isPlaying}
-          onStartAudio={togglePlay}
-          onStopAudio={togglePlay}
-          audioSource={settings.audioSource}
-        />
-      )}
-
       {/* Top Controls - hidden in studio mode */}
       {!studioMode && (
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
@@ -274,14 +258,14 @@ function App() {
             <Sliders className={`w-5 h-5 ${showEQ ? 'text-gold' : 'text-foreground/70 hover:text-foreground'}`} />
           </button>
           <button
-            onClick={toggleUIVisibility}
-            className="p-2 rounded-lg glass hover:bg-white/10 transition-colors"
-            title={settings.showGlassCard ? 'Hide UI Overlay' : 'Show UI Overlay'}
+            onClick={togglePerformanceMode}
+            className={`p-2 rounded-lg glass hover:bg-white/10 transition-colors ${settings.showGlassCard ? 'bg-green-500/20' : ''}`}
+            title={settings.showGlassCard ? 'Disable Performance Mode (High Quality)' : 'Enable Performance Mode (Smooth Playback)'}
           >
             {settings.showGlassCard ? (
-              <EyeOff className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+              <Zap className="w-5 h-5 text-green-400" />
             ) : (
-              <Eye className="w-5 h-5 text-foreground/70 hover:text-foreground" />
+              <Zap className="w-5 h-5 text-foreground/70 hover:text-foreground" />
             )}
           </button>
           <button

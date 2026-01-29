@@ -4,8 +4,6 @@ import {
   Monitor,
   Mic,
   Music,
-  Radio,
-  Sparkles,
   Zap,
   Palette,
   Gauge,
@@ -29,8 +27,6 @@ const audioSources: { value: AudioSource; label: string; icon: typeof Monitor; d
   { value: 'system', label: 'System Audio', icon: Monitor, description: 'Capture all system audio (loopback)' },
   { value: 'microphone', label: 'Microphone', icon: Mic, description: 'Use microphone input' },
   { value: 'midi', label: 'MIDI', icon: Music, description: 'Windows Wavetable MIDI input' },
-  { value: 'spotify', label: 'Spotify', icon: Radio, description: 'Connect to Spotify (requires Premium)' },
-  { value: 'tidal', label: 'Tidal', icon: Radio, description: 'Connect to Tidal (requires HiFi)' },
 ];
 
 const qualityOptions: { value: Quality; label: string }[] = [
@@ -137,7 +133,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           {/* Visual Effects */}
           <section>
             <h3 className="flex items-center gap-2 text-lg font-medium mb-4">
-              <Sparkles className="w-5 h-5 text-primary-solid" />
+              <Zap className="w-5 h-5 text-primary-solid" />
               Visual Effects
             </h3>
             <div className="space-y-4">
@@ -164,23 +160,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               </div>
 
               {/* Toggles */}
-              <div className="grid grid-cols-2 gap-4">
-                <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Particles
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings.particlesEnabled}
-                    onChange={(e) => setSettings({ particlesEnabled: e.target.checked })}
-                    className="w-5 h-5 accent-primary-solid"
-                  />
-                </label>
+              <div className="space-y-3">
                 <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
                   <span className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
-                    Plasma Bolts
+                    Audio Visualization (Plasma)
                   </span>
                   <input
                     type="checkbox"
@@ -367,14 +351,22 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             </p>
             <div className="space-y-3">
               <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 cursor-pointer">
-                <span className="flex items-center gap-2">
-                  <Layers className="w-4 h-4" />
-                  Glass Card Overlay
-                </span>
+                <div className="flex flex-col">
+                  <span className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Performance Mode
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Reduces animation detail for smooth playback on older systems
+                  </span>
+                </div>
                 <input
                   type="checkbox"
                   checked={settings.showGlassCard}
-                  onChange={(e) => setSettings({ showGlassCard: e.target.checked })}
+                  onChange={(e) => setSettings({ 
+                    showGlassCard: e.target.checked,
+                    quality: e.target.checked ? 'low' : 'high'
+                  })}
                   className="w-5 h-5 accent-primary-solid"
                 />
               </label>
