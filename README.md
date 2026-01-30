@@ -18,8 +18,8 @@ Download the official installer from our website:
 
 The official release includes:
 - Pre-built Windows installer
-- Automatic updates
 - Support & documentation
+- User manual included
 
 ---
 
